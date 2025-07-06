@@ -33,10 +33,12 @@
 <body class="bg-gray-900 text-gray-100">
 
     <!-- Firebase SDK -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot, collection, deleteDoc, updateDoc, increment, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+   <script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-analytics.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
 
         // --- ELEMENTOS DO DOM ---
         const searchInput = document.getElementById('search-input');
@@ -135,9 +137,7 @@
             });
             document.querySelectorAll('.open-add-modal-btn').forEach(button => button.addEventListener('click', (e) => openAddCardModal(e.currentTarget.dataset.cardId)));
         };
-        searchButton.addEventListener('click', searchCards);
-        searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') searchCards(); });
-
+        
         // --- LÓGICA DOS MODAIS ---
         const openAddCardModal = (cardId) => {
             const card = searchCache.get(cardId);
@@ -170,8 +170,8 @@
             modalPriceDisplay.textContent = `Valor estimado: R$ ${priceBrl.toFixed(2)}`;
             addCardForm.dataset.currentPrice = priceBrl.toFixed(2);
         };
-        addCardForm.quality.addEventListener('change', updatePriceDisplay);
-        addCardForm.addEventListener('submit', async (e) => {
+        
+        async function handleAddFormSubmit(e) {
             e.preventDefault();
             const cardId = addCardForm.dataset.cardId;
             const card = searchCache.get(cardId);
@@ -180,8 +180,7 @@
             const cardData = { id: card.id, name: card.name, image: card.images.small, set: card.set, number: card.number, quality: quality, acquiredPrice: price, pokedexNumber: card.nationalPokedexNumbers ? card.nationalPokedexNumbers[0] : null };
             await addCardToCollection(cardData);
             addCardModal.style.display = 'none';
-        });
-        addCardModalCloseBtn.addEventListener('click', () => addCardModal.style.display = 'none');
+        }
         
         const openDetailsModal = (docId) => {
             const card = collectionData.get(docId);
@@ -194,7 +193,6 @@
             detailsCardPrice.textContent = `R$ ${card.acquiredPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
             detailsModal.style.display = 'flex';
         };
-        detailsModalCloseBtn.addEventListener('click', () => detailsModal.style.display = 'none');
 
         // --- LÓGICA DA COLEÇÃO (FIRESTORE) ---
         const addCardToCollection = async (cardData) => {
@@ -236,7 +234,6 @@
                 openDetailsModal(cardContainer.dataset.id);
             }
         };
-        myCollectionContainer.addEventListener('click', handleCollectionClick);
 
         const renderCollection = () => {
             if (!collectionData) return;
@@ -318,11 +315,20 @@
             });
         };
         
-        groupBySelect.addEventListener('change', renderCollection);
-        
+        function attachEventListeners() {
+            searchButton.addEventListener('click', searchCards);
+            searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') searchCards(); });
+            addCardForm.addEventListener('submit', handleAddFormSubmit);
+            addCardModalCloseBtn.addEventListener('click', () => addCardModal.style.display = 'none');
+            detailsModalCloseBtn.addEventListener('click', () => detailsModal.style.display = 'none');
+            myCollectionContainer.addEventListener('click', handleCollectionClick);
+            groupBySelect.addEventListener('change', renderCollection);
+        }
+
         // --- INICIALIZAÇÃO ROBUSTA ---
         (async () => {
             await fetchExchangeRate();
+            attachEventListeners(); // Garante que os botões funcionem
             
             try {
                 // COLE AS SUAS CHAVES DO FIREBASE AQUI!
@@ -336,7 +342,6 @@
                     measurementId: "G-JBPHZ0EQWC"
                 };
                 
-                // Validação mínima da configuração
                 if (!firebaseConfig.apiKey || firebaseConfig.apiKey.includes("COLE_A_SUA")) {
                     throw new Error("Configuração do Firebase inválida. Por favor, cole as suas chaves.");
                 }
