@@ -35,10 +35,24 @@
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot, collection, deleteDoc, updateDoc, increment, getDoc } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
 
         // --- ELEMENTOS DO DOM ---
+        const authView = document.getElementById('auth-view');
+        const loginView = document.getElementById('login-view');
+        const registerView = document.getElementById('register-view');
+        const appView = document.getElementById('app-view');
+        const loadingView = document.getElementById('loading-view');
+        
+        const loginForm = document.getElementById('login-form');
+        const registerForm = document.getElementById('register-form');
+        const showRegisterLink = document.getElementById('show-register-link');
+        const showLoginLink = document.getElementById('show-login-link');
+        
+        const userEmailDisplay = document.getElementById('user-email-display');
+        const logoutButton = document.getElementById('logout-button');
+        
         const searchInput = document.getElementById('search-input');
         const searchButton = document.getElementById('search-button');
         const searchResultsContainer = document.getElementById('search-results');
@@ -53,26 +67,22 @@
         const firebaseErrorBanner = document.getElementById('firebase-error-banner');
 
         const addCardModal = document.getElementById('add-card-modal');
-        const addCardModalCloseBtn = document.getElementById('add-card-modal-close-btn');
-        const addCardForm = document.getElementById('add-card-form');
-        const modalCardImage = document.getElementById('modal-card-image');
-        const modalCardName = document.getElementById('modal-card-name');
-        const modalCardSetInfo = document.getElementById('modal-card-set-info');
-        const modalPriceDisplay = document.getElementById('modal-price-display');
-
         const detailsModal = document.getElementById('details-modal');
-        const detailsModalCloseBtn = document.getElementById('details-modal-close-btn');
-        const detailsCardImage = document.getElementById('details-card-image');
-        const detailsCardName = document.getElementById('details-card-name');
-        const detailsCardSetInfo = document.getElementById('details-card-set-info');
-        const detailsCardQuality = document.getElementById('details-card-quality');
-        const detailsCardPrice = document.getElementById('details-card-price');
         
         let currentUserId = null;
         let searchCache = new Map();
         let collectionData = new Map();
+        let collectionUnsubscribe = null;
         let usdToBrlRate = 5.3;
-        let db, auth; 
+        let db, auth;
+
+        // --- CONTROLO DE VISUALIZAÇÃO ---
+        const showView = (viewId) => {
+            loadingView.classList.add('hidden');
+            authView.classList.add('hidden');
+            appView.classList.add('hidden');
+            document.getElementById(viewId).classList.remove('hidden');
+        };
 
         // --- MAPEAMENTO DE GERAÇÃO ---
         const generationMap = {
@@ -140,6 +150,10 @@
         const openAddCardModal = (cardId) => {
             const card = searchCache.get(cardId);
             if (!card) return;
+            const modalCardImage = document.getElementById('modal-card-image');
+            const modalCardName = document.getElementById('modal-card-name');
+            const modalCardSetInfo = document.getElementById('modal-card-set-info');
+            const addCardForm = document.getElementById('add-card-form');
             modalCardImage.src = card.images.small;
             modalCardName.textContent = card.name;
             const releaseYear = new Date(card.set.releaseDate).getFullYear();
@@ -150,6 +164,8 @@
             addCardModal.style.display = 'flex';
         };
         const updatePriceDisplay = () => {
+            const addCardForm = document.getElementById('add-card-form');
+            const modalPriceDisplay = document.getElementById('modal-price-display');
             const cardId = addCardForm.dataset.cardId;
             const card = searchCache.get(cardId);
             const quality = addCardForm.quality.value;
@@ -171,6 +187,7 @@
         
         async function handleAddFormSubmit(e) {
             e.preventDefault();
+            const addCardForm = document.getElementById('add-card-form');
             const cardId = addCardForm.dataset.cardId;
             const card = searchCache.get(cardId);
             const quality = addCardForm.quality.value;
@@ -183,6 +200,11 @@
         const openDetailsModal = (docId) => {
             const card = collectionData.get(docId);
             if (!card) return;
+            const detailsCardImage = document.getElementById('details-card-image');
+            const detailsCardName = document.getElementById('details-card-name');
+            const detailsCardSetInfo = document.getElementById('details-card-set-info');
+            const detailsCardQuality = document.getElementById('details-card-quality');
+            const detailsCardPrice = document.getElementById('details-card-price');
             detailsCardImage.src = card.image;
             detailsCardName.textContent = card.name;
             const releaseYear = new Date(card.set.releaseDate).getFullYear();
@@ -198,9 +220,9 @@
                 alert("Não foi possível adicionar a carta. A conexão com a base de dados falhou. Verifique a sua configuração do Firebase.");
                 return;
             }
-            const appId = "pokemtcgcard"; // Usando o ID do projeto diretamente
+            const appId = "pokemtcgcard";
             const docId = `${cardData.id}-${cardData.quality}`;
-            const cardRef = doc(db, `artifacts/${appId}/users/${currentUserId}/tcg-collection`, docId);
+            const cardRef = doc(db, `users/${currentUserId}/tcg-collection`, docId);
             const docSnap = await getDoc(cardRef);
             if (docSnap.exists()) {
                 await updateDoc(cardRef, { quantity: increment(1) });
@@ -214,8 +236,8 @@
             if (button) {
                 const docId = button.dataset.id;
                 if (!docId) return;
-                const appId = "pokemtcgcard"; // Usando o ID do projeto diretamente
-                const cardRef = doc(db, `artifacts/${appId}/users/${currentUserId}/tcg-collection`, docId);
+                const appId = "pokemtcgcard";
+                const cardRef = doc(db, `users/${currentUserId}/tcg-collection`, docId);
                 if (button.classList.contains('quantity-plus')) {
                     await updateDoc(cardRef, { quantity: increment(1) });
                 } else if (button.classList.contains('quantity-minus')) {
@@ -302,10 +324,9 @@
 
         const loadMyCollection = () => {
             if (!currentUserId) return;
-            const appId = "pokemtcgcard"; // Usando o ID do projeto diretamente
             collectionLoader.classList.remove('hidden');
-            const collectionRef = collection(db, `artifacts/${appId}/users/${currentUserId}/tcg-collection`);
-            onSnapshot(collectionRef, (snapshot) => {
+            const collectionRef = collection(db, `users/${currentUserId}/tcg-collection`);
+            collectionUnsubscribe = onSnapshot(collectionRef, (snapshot) => {
                 collectionLoader.classList.add('hidden');
                 collectionData.clear();
                 snapshot.docs.forEach(doc => collectionData.set(doc.id, { ...doc.data(), docId: doc.id }));
@@ -347,8 +368,9 @@
                     if (user) {
                         currentUserId = user.uid;
                         loadMyCollection();
+                        showView('app-view');
                     } else {
-                        signInAnonymously(auth).catch(error => console.error("Erro no login anónimo:", error));
+                        showView('auth-view');
                     }
                 });
 
@@ -361,40 +383,73 @@
 
     </script>
     
-    <!-- Aplicação Principal -->
-    <div class="container mx-auto p-4 md:p-8">
-        <header class="text-center mb-12">
-            <h1 class="text-4xl md:text-5xl font-bold text-white">Gerenciador de Coleção TCG</h1>
-            <p class="text-blue-400 font-semibold mt-2">Com Qualidade e Preços de Mercado</p>
-        </header>
-
-        <div id="firebase-error-banner" class="hidden bg-red-500 text-white p-4 rounded-lg mb-8 text-center font-bold">
-            Atenção: A conexão com a base de dados falhou. A sua coleção não pode ser guardada ou carregada.
-        </div>
-
-        <main class="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            <section>
-                <h2 class="text-3xl font-bold mb-4 border-b-2 border-blue-500 pb-2">Buscar Cartas</h2>
-                <div class="flex gap-2 mb-6"><input type="text" id="search-input" placeholder="Ex: Charizard, Pikachu, etc." class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"><button id="search-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition-colors">Buscar</button></div>
-                <div id="loader" class="loader mx-auto hidden"></div>
-                <div id="search-results" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4"></div>
-            </section>
-            <section id="my-collection-section">
-                <div class="flex justify-between items-center mb-4 border-b-2 border-green-500 pb-2 flex-wrap gap-4">
-                    <h2 class="text-3xl font-bold">A Minha Coleção</h2>
-                    <div class="text-right"><p class="font-bold text-lg text-green-400">R$ <span id="collection-value">0,00</span></p><p class="font-semibold"><span id="collection-count">0</span> Cartas (<span id="unique-collection-count">0</span> Únicas)</p></div>
-                </div>
-                <div class="mb-4"><label for="group-by-select" class="text-sm font-semibold mr-2">Organizar por:</label><select id="group-by-select" class="bg-gray-700 border border-gray-600 rounded-lg px-3 py-1 text-sm"><option value="edition">Edição</option><option value="generation">Geração</option><option value="pokedex">Número da Pokédex</option><option value="value">Valor (Maior para Menor)</option></select></div>
-                <div id="collection-loader" class="loader mx-auto"></div>
-                <div id="my-collection" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-h-[70vh] overflow-y-auto pr-2"></div>
-            </section>
-        </main>
+    <!-- Tela de Carregamento Inicial -->
+    <div id="loading-view" class="flex items-center justify-center min-h-screen">
+        <div class="loader"></div>
     </div>
-    <footer class="text-center p-6 mt-8 border-t border-gray-700"><p class="text-sm text-gray-300">Criado com ❤️ por um Mestre Pokémon.</p><p class="text-xs text-gray-400 mt-2">Dados de cartas e imagens via <a href="https://pokemontcg.io/" target="_blank" rel="noopener noreferrer" class="underline hover:text-blue-300">pokemontcg.io</a>.</p><p class="text-xs text-gray-500 mt-2">*Os valores em Reais (R$) são estimativas baseadas nos preços de mercado do TCGplayer (USD) e convertidos usando uma taxa de câmbio atualizada diariamente. Os valores servem apenas como referência.</p></footer>
+
+    <!-- Tela de Autenticação -->
+    <div id="auth-view" class="hidden min-h-screen flex items-center justify-center">
+        <div class="w-full max-w-md">
+            <!-- Formulário de Login -->
+            <div id="login-view">
+                <form id="login-form" class="bg-gray-800 shadow-md rounded-lg px-8 pt-6 pb-8 mb-4">
+                    <h2 class="text-2xl font-bold text-center text-white mb-6">Login</h2>
+                    <div class="mb-4"><label class="block text-gray-300 text-sm font-bold mb-2" for="login-email">Email</label><input class="shadow appearance-none border rounded w-full py-2 px-3 bg-gray-700 text-gray-200 leading-tight focus:outline-none focus:shadow-outline" id="login-email" name="email" type="email" placeholder="seu@email.com" required></div>
+                    <div class="mb-6"><label class="block text-gray-300 text-sm font-bold mb-2" for="login-password">Senha</label><input class="shadow appearance-none border rounded w-full py-2 px-3 bg-gray-700 text-gray-200 mb-3 leading-tight focus:outline-none focus:shadow-outline" id="login-password" name="password" type="password" placeholder="******************" required></div>
+                    <div class="flex items-center justify-between"><button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" type="submit">Entrar</button><a id="show-register-link" class="inline-block align-baseline font-bold text-sm text-blue-400 hover:text-blue-500" href="#">Criar uma conta</a></div>
+                </form>
+            </div>
+            <!-- Formulário de Registo -->
+            <div id="register-view" class="hidden">
+                <form id="register-form" class="bg-gray-800 shadow-md rounded-lg px-8 pt-6 pb-8 mb-4">
+                    <h2 class="text-2xl font-bold text-center text-white mb-6">Criar Conta</h2>
+                    <div class="mb-4"><label class="block text-gray-300 text-sm font-bold mb-2" for="register-email">Email</label><input class="shadow appearance-none border rounded w-full py-2 px-3 bg-gray-700 text-gray-200 leading-tight focus:outline-none focus:shadow-outline" id="register-email" name="email" type="email" placeholder="seu@email.com" required></div>
+                    <div class="mb-4"><label class="block text-gray-300 text-sm font-bold mb-2" for="register-password">Senha</label><input class="shadow appearance-none border rounded w-full py-2 px-3 bg-gray-700 text-gray-200 leading-tight focus:outline-none focus:shadow-outline" id="register-password" name="password" type="password" placeholder="******************" required></div>
+                    <div class="mb-6"><label class="block text-gray-300 text-sm font-bold mb-2" for="confirm-password">Confirmar Senha</label><input class="shadow appearance-none border rounded w-full py-2 px-3 bg-gray-700 text-gray-200 mb-3 leading-tight focus:outline-none focus:shadow-outline" id="confirm-password" name="confirm-password" type="password" placeholder="******************" required></div>
+                    <div class="flex items-center justify-between"><button class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" type="submit">Criar Conta</button><a id="show-login-link" class="inline-block align-baseline font-bold text-sm text-blue-400 hover:text-blue-500" href="#">Já tem uma conta?</a></div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Aplicação Principal -->
+    <div id="app-view" class="hidden">
+        <div class="container mx-auto p-4 md:p-8">
+            <header class="flex justify-between items-center mb-8 flex-wrap gap-4">
+                <div>
+                    <h1 class="text-3xl md:text-4xl font-bold text-white">Gerenciador de Coleção</h1>
+                    <p id="user-email-display" class="text-sm text-gray-300"></p>
+                </div>
+                <div class="flex gap-2">
+                    <button id="logout-button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition-colors text-sm">Sair</button>
+                </div>
+            </header>
+
+            <main class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                <section>
+                    <h2 class="text-3xl font-bold mb-4 border-b-2 border-blue-500 pb-2">Buscar Cartas</h2>
+                    <div class="flex gap-2 mb-6"><input type="text" id="search-input" placeholder="Ex: Charizard, Pikachu, etc." class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"><button id="search-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition-colors">Buscar</button></div>
+                    <div id="loader" class="loader mx-auto hidden"></div>
+                    <div id="search-results" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4"></div>
+                </section>
+                <section id="my-collection-section">
+                    <div class="flex justify-between items-center mb-4 border-b-2 border-green-500 pb-2 flex-wrap gap-4">
+                        <h2 class="text-3xl font-bold">A Minha Coleção</h2>
+                        <div class="text-right"><p class="font-bold text-lg text-green-400">R$ <span id="collection-value">0,00</span></p><p class="font-semibold"><span id="collection-count">0</span> Cartas (<span id="unique-collection-count">0</span> Únicas)</p></div>
+                    </div>
+                    <div class="mb-4"><label for="group-by-select" class="text-sm font-semibold mr-2">Organizar por:</label><select id="group-by-select" class="bg-gray-700 border border-gray-600 rounded-lg px-3 py-1 text-sm"><option value="edition">Edição</option><option value="generation">Geração</option><option value="pokedex">Número da Pokédex</option><option value="value">Valor (Maior para Menor)</option></select></div>
+                    <div id="collection-loader" class="loader mx-auto"></div>
+                    <div id="my-collection" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-h-[70vh] overflow-y-auto pr-2"></div>
+                </section>
+            </main>
+        </div>
+        <footer class="text-center p-6 mt-8 border-t border-gray-700"><p class="text-sm text-gray-300">Criado com ❤️ por um Mestre Pokémon.</p><p class="text-xs text-gray-400 mt-2">Dados de cartas e imagens via <a href="https://pokemontcg.io/" target="_blank" rel="noopener noreferrer" class="underline hover:text-blue-300">pokemontcg.io</a>.</p><p class="text-xs text-gray-500 mt-2">*Os valores em Reais (R$) são estimativas baseadas nos preços de mercado do TCGplayer (USD) e convertidos usando uma taxa de câmbio atualizada diariamente. Os valores servem apenas como referência.</p></footer>
+    </div>
     
     <!-- Modais -->
     <div id="add-card-modal" class="modal-overlay"><div class="modal-content" style="max-width: 450px;"><div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold">Adicionar à Coleção</h2><button id="add-card-modal-close-btn" class="text-4xl font-bold text-gray-400 hover:text-white transition-colors">&times;</button></div><div class="flex flex-col sm:flex-row gap-4"><img id="modal-card-image" src="" alt="Imagem da carta" class="w-full sm:w-1/3 rounded-lg"><form id="add-card-form" class="flex-grow flex flex-col"><h3 id="modal-card-name" class="text-xl font-bold">Nome da Carta</h3><p id="modal-card-set-info" class="text-sm text-gray-400 mb-4">Coleção - #Número</p><div class="mb-4"><label for="quality" class="block mb-2 font-semibold">Qualidade da Carta:</label><select name="quality" id="quality" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2"><option value="Nova">Nova (Mint/NM)</option><option value="Pouco Usada">Pouco Usada (LP)</option><option value="Usada">Usada (Played)</option></select></div><p id="modal-price-display" class="text-lg font-bold text-green-400 mb-6">Valor estimado: R$ 0,00</p><button type="submit" class="mt-auto w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-colors">Confirmar e Adicionar</button></form></div></div></div>
-    <div id="details-modal" class="modal-overlay"><div class="modal-content"><div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold">Detalhes da Carta</h2><button id="details-modal-close-btn" class="text-4xl font-bold text-gray-400 hover:text-white transition-colors">&times;</button></div><div class="flex flex-col sm:flex-row gap-4"><img id="details-card-image" src="" alt="Imagem da carta" class="w-full sm:w-1/3 rounded-lg"><div class="flex-grow"><h3 id="details-card-name" class="text-2xl font-bold">Nome da Carta</h3><p id="details-card-set-info" class="text-md text-gray-400 mb-4">Coleção - #Número</p><div class="mb-4"><p class="font-semibold">Qualidade:</p><p id="details-card-quality" class="text-lg text-blue-300"></p></div><div><p class="font-semibold">Valor Registado:</p><p id="details-card-price" class="text-lg font-bold text-green-400"></p></div></div></div></div></div>
+    <div id="details-modal" class="modal-overlay"><div class="modal-content"><div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold">Detalhes da Carta</h2><button id="details-modal-close-btn" class="text-4xl font-bold text-gray-400 hover:text-white transition-colors">&times;</button></div><div class="flex flex-col sm:flex-row gap-4"><img id="details-card-image" src="" alt="Imagem da carta" class="w-full sm:w/3 rounded-lg"><div class="flex-grow"><h3 id="details-card-name" class="text-2xl font-bold">Nome da Carta</h3><p id="details-card-set-info" class="text-md text-gray-400 mb-4">Coleção - #Número</p><div class="mb-4"><p class="font-semibold">Qualidade:</p><p id="details-card-quality" class="text-lg text-blue-300"></p></div><div><p class="font-semibold">Valor Registado:</p><p id="details-card-price" class="text-lg font-bold text-green-400"></p></div></div></div></div></div>
 
 </body>
 </html>
