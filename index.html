@@ -105,10 +105,12 @@
                 const authView = document.getElementById('auth-view');
                 const appView = document.getElementById('app-view');
                 
-                loadingView.classList.add('hidden');
-                authView.classList.add('hidden');
-                appView.classList.add('hidden');
-                document.getElementById(viewId).classList.remove('hidden');
+                if(loadingView) loadingView.classList.add('hidden');
+                if(authView) authView.classList.add('hidden');
+                if(appView) appView.classList.add('hidden');
+                
+                const viewToShow = document.getElementById(viewId);
+                if(viewToShow) viewToShow.classList.remove('hidden');
             };
 
             // --- MAPEAMENTO DE GERAÇÃO ---
@@ -279,6 +281,7 @@
                 } else if (cardContainer) {
                     if (deckBuilderMode) {
                         cardContainer.classList.toggle('selected');
+                        const card = collectionData.get(cardContainer.dataset.id);
                         if (selectedDeckCards.has(card.docId)) {
                             selectedDeckCards.delete(card.docId);
                         } else {
@@ -301,9 +304,11 @@
 
                 if (collectionData.size === 0) {
                     container.innerHTML = `<p class="text-center text-gray-400 col-span-full">A sua coleção está vazia.</p>`;
-                    collectionCount.textContent = 0;
-                    uniqueCollectionCount.textContent = 0;
-                    collectionValue.textContent = '0,00';
+                    if (!deckBuilderMode) {
+                        collectionCount.textContent = 0;
+                        uniqueCollectionCount.textContent = 0;
+                        collectionValue.textContent = '0,00';
+                    }
                     return;
                 }
 
@@ -339,10 +344,11 @@
                         grouped[groupName].forEach(card => container.appendChild(createCardElement(card, groupBy)));
                     }
                 }
-
-                collectionCount.textContent = totalCards;
-                uniqueCollectionCount.textContent = uniqueCards;
-                collectionValue.textContent = totalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                if(!deckBuilderMode){
+                    collectionCount.textContent = totalCards;
+                    uniqueCollectionCount.textContent = uniqueCards;
+                    collectionValue.textContent = totalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                }
             };
 
             const createCardElement = (card, groupBy) => {
@@ -469,56 +475,53 @@
                 generatedDeckContent.innerHTML = html;
             }
             
-            // --- INICIALIZAÇÃO ---
-            function attachEventListeners() {
-                searchButton.addEventListener('click', searchCards);
-                searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') searchCards(); });
-                addCardForm.addEventListener('submit', handleAddFormSubmit);
-                addCardModalCloseBtn.addEventListener('click', () => addCardModal.style.display = 'none');
-                detailsModalCloseBtn.addEventListener('click', () => detailsModal.style.display = 'none');
-                myCollectionContainer.addEventListener('click', handleCollectionClick);
-                deckBuilderGrid.addEventListener('click', handleCollectionClick);
-                groupBySelect.addEventListener('change', renderCollection);
-                openAuthModalBtn.addEventListener('click', () => authModal.style.display = 'flex');
-                authModalCloseBtn.addEventListener('click', () => authModal.style.display = 'none');
-                showRegisterBtn.addEventListener('click', () => {
-                    loginTab.classList.add('hidden');
-                    registerTab.classList.remove('hidden');
-                });
-                showLoginBtn.addEventListener('click', () => {
-                    registerTab.classList.add('hidden');
-                    loginTab.classList.remove('hidden');
-                });
-                loginForm.addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                    try {
-                        await signInWithEmailAndPassword(auth, loginForm.email.value, loginForm.password.value);
-                        authModal.style.display = 'none';
-                    } catch (error) {
-                        alert(`Erro ao fazer login: ${error.message}`);
-                    }
-                });
-                registerForm.addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                    if (registerForm.password.value !== registerForm['confirm-password'].value) {
-                        alert("As senhas não coincidem!");
-                        return;
-                    }
-                    try {
-                        await createUserWithEmailAndPassword(auth, registerForm.email.value, registerForm.password.value);
-                        authModal.style.display = 'none';
-                    } catch (error) {
-                        alert(`Erro ao criar conta: ${error.message}`);
-                    }
-                });
-                logoutButton.addEventListener('click', () => signOut(auth));
-                startDeckBuilderBtn.addEventListener('click', enterDeckBuilderMode);
-                cancelDeckBuilderBtn.addEventListener('click', exitDeckBuilderMode);
-                generateDeckBtn.addEventListener('click', generateDeck);
-                closeDeckModalBtn.addEventListener('click', () => generatedDeckModal.style.display = 'none');
-            }
+            // --- INICIALIZAÇÃO ROBUSTA ---
+            searchButton.addEventListener('click', searchCards);
+            searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') searchCards(); });
+            addCardForm.addEventListener('submit', handleAddFormSubmit);
+            addCardModalCloseBtn.addEventListener('click', () => addCardModal.style.display = 'none');
+            detailsModalCloseBtn.addEventListener('click', () => detailsModal.style.display = 'none');
+            myCollectionContainer.addEventListener('click', handleCollectionClick);
+            deckBuilderGrid.addEventListener('click', handleCollectionClick);
+            groupBySelect.addEventListener('change', renderCollection);
+            openAuthModalBtn.addEventListener('click', () => authModal.style.display = 'flex');
+            authModalCloseBtn.addEventListener('click', () => authModal.style.display = 'none');
+            showRegisterBtn.addEventListener('click', () => {
+                loginTab.classList.add('hidden');
+                registerTab.classList.remove('hidden');
+            });
+            showLoginBtn.addEventListener('click', () => {
+                registerTab.classList.add('hidden');
+                loginTab.classList.remove('hidden');
+            });
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                try {
+                    await signInWithEmailAndPassword(auth, loginForm.email.value, loginForm.password.value);
+                    authModal.style.display = 'none';
+                } catch (error) {
+                    alert(`Erro ao fazer login: ${error.message}`);
+                }
+            });
+            registerForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                if (registerForm.password.value !== registerForm['confirm-password'].value) {
+                    alert("As senhas não coincidem!");
+                    return;
+                }
+                try {
+                    await createUserWithEmailAndPassword(auth, registerForm.email.value, registerForm.password.value);
+                    authModal.style.display = 'none';
+                } catch (error) {
+                    alert(`Erro ao criar conta: ${error.message}`);
+                }
+            });
+            logoutButton.addEventListener('click', () => signOut(auth));
+            startDeckBuilderBtn.addEventListener('click', enterDeckBuilderMode);
+            cancelDeckBuilderBtn.addEventListener('click', exitDeckBuilderMode);
+            generateDeckBtn.addEventListener('click', generateDeck);
+            closeDeckModalBtn.addEventListener('click', () => generatedDeckModal.style.display = 'none');
 
-            attachEventListeners(); 
             await fetchExchangeRate();
             
             try {
@@ -546,6 +549,7 @@
                         loggedOutHeader.classList.add('hidden');
                         startDeckBuilderBtn.classList.remove('hidden');
                         loadMyCollection();
+                        showView('app-view');
                     } else {
                         currentUserId = null;
                         loggedInHeader.classList.add('hidden');
@@ -556,6 +560,7 @@
                         collectionCount.textContent = 0;
                         uniqueCollectionCount.textContent = 0;
                         collectionValue.textContent = '0,00';
+                        showView('auth-view');
                     }
                 });
 
