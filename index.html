@@ -75,7 +75,7 @@
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot, collection, deleteDoc, updateDoc, increment, getDoc } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
 
         document.addEventListener('DOMContentLoaded', async () => {
@@ -124,6 +124,9 @@
             const generatedDeckContent = document.getElementById('generated-deck-content');
             const closeDeckModalBtn = document.getElementById('close-generated-deck-modal-btn');
             const deckGenerationLoader = document.getElementById('deck-generation-loader');
+
+            const mainAppContent = document.getElementById('main-app-content');
+            const sharedCollectionView = document.getElementById('shared-collection-view');
 
             let currentUserId = null;
             let searchCache = new Map();
@@ -607,31 +610,6 @@
     <!-- Tela de Carregamento Inicial -->
     <div id="loading-view" class="flex items-center justify-center min-h-screen">
         <div class="loader"></div>
-    </div>
-
-    <!-- Tela de Autenticação -->
-    <div id="auth-view" class="hidden min-h-screen flex items-center justify-center">
-        <div class="w-full max-w-md">
-            <!-- Formulário de Login -->
-            <div id="login-view">
-                <form id="login-form" class="bg-gray-800 shadow-md rounded-lg px-8 pt-6 pb-8 mb-4">
-                    <h2 class="text-2xl font-bold text-center text-white mb-6">Login</h2>
-                    <div class="mb-4"><label class="block text-gray-300 text-sm font-bold mb-2" for="login-email">Email</label><input class="shadow appearance-none border rounded w-full py-2 px-3 bg-gray-700 text-gray-200 leading-tight focus:outline-none focus:shadow-outline" id="login-email" name="email" type="email" placeholder="seu@email.com" required></div>
-                    <div class="mb-6"><label class="block text-gray-300 text-sm font-bold mb-2" for="login-password">Senha</label><input class="shadow appearance-none border rounded w-full py-2 px-3 bg-gray-700 text-gray-200 mb-3 leading-tight focus:outline-none focus:shadow-outline" id="login-password" name="password" type="password" placeholder="******************" required></div>
-                    <div class="flex items-center justify-between"><button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Entrar</button><a id="show-register-link" class="inline-block align-baseline font-bold text-sm text-blue-400 hover:text-blue-500" href="#">Criar uma conta</a></div>
-                </form>
-            </div>
-            <!-- Formulário de Registo -->
-            <div id="register-view" class="hidden">
-                <form id="register-form" class="bg-gray-800 shadow-md rounded-lg px-8 pt-6 pb-8 mb-4">
-                    <h2 class="text-2xl font-bold text-center text-white mb-6">Criar Conta</h2>
-                    <div class="mb-4"><label class="block text-gray-300 text-sm font-bold mb-2" for="register-email">Email</label><input class="shadow appearance-none border rounded w-full py-2 px-3 bg-gray-700 text-gray-200 leading-tight focus:outline-none focus:shadow-outline" id="register-email" name="email" type="email" placeholder="seu@email.com" required></div>
-                    <div class="mb-4"><label class="block text-gray-300 text-sm font-bold mb-2" for="register-password">Senha</label><input class="shadow appearance-none border rounded w-full py-2 px-3 bg-gray-700 text-gray-200 leading-tight focus:outline-none focus:shadow-outline" id="register-password" name="password" type="password" placeholder="Senha (mínimo 6 caracteres)" required></div>
-                    <div class="mb-6"><label class="block text-gray-300 text-sm font-bold mb-2" for="confirm-password">Confirmar Senha</label><input class="shadow appearance-none border rounded w-full py-2 px-3 bg-gray-700 text-gray-200 mb-3 leading-tight focus:outline-none focus:shadow-outline" id="confirm-password" name="confirm-password" type="password" placeholder="******************" required></div>
-                    <div class="flex items-center justify-between"><button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Criar Conta</button><a id="show-login-link" class="inline-block align-baseline font-bold text-sm text-blue-400 hover:text-blue-500" href="#">Já tem uma conta?</a></div>
-                </form>
-            </div>
-        </div>
     </div>
 
     <!-- Aplicação Principal -->
