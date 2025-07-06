@@ -13,6 +13,16 @@
         h1, h2 { font-family: 'Press Start 2P', cursive; }
         .loader { border: 4px solid #4b5563; border-top: 4px solid #f59e0b; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        /* EFEITO DE ZOOM NA CARTA */
+        .card-image-zoom {
+            transition: transform 0.2s ease-in-out;
+        }
+        .card-image-zoom:hover {
+            transform: scale(2);
+            z-index: 100;
+        }
+
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #2d3748; }
         ::-webkit-scrollbar-thumb { background: #4a5568; border-radius: 4px; }
@@ -69,7 +79,6 @@
             }
 
             try {
-                // Verificar se o perfil é público
                 const profileRef = doc(db, 'public_profiles', userId);
                 const profileSnap = await getDoc(profileRef);
 
@@ -81,7 +90,6 @@
                 const ownerName = profileSnap.data().ownerName || 'um Treinador';
                 title.textContent = `Coleção de ${ownerName}`;
 
-                // Buscar a coleção
                 const collectionRef = collection(db, `users/${userId}/tcg-collection`);
                 const collectionSnapshot = await getDocs(collectionRef);
 
@@ -116,11 +124,15 @@
                 const cardElement = document.createElement('div');
                 cardElement.className = "bg-gray-800 p-3 rounded-lg flex flex-col items-center text-center";
                 
-                // **AJUSTE APLICADO AQUI**
-                const setInfoHTML = `<div class="text-xs text-gray-400 flex items-center justify-center gap-1.5 mt-1"><span>${card.set.name}</span> <img src="${card.set.images.symbol}" class="h-4" alt="Set Symbol"> <span>#${card.number}</span></div>`;
+                let setInfoHTML = '';
+                if(card.set && card.set.name && card.number) {
+                    const symbolUrl = (card.set.images && card.set.images.symbol) ? card.set.images.symbol : '';
+                    const symbolImg = symbolUrl ? `<img src="${symbolUrl}" class="h-4" alt="Set Symbol">` : '';
+                    setInfoHTML = `<div class="text-xs text-gray-400 flex items-center justify-center gap-1.5 mt-1"><span>${card.set.name}</span> ${symbolImg} <span>#${card.number}</span></div>`;
+                }
                 
                 cardElement.innerHTML = `
-                    <img src="${card.image}" alt="${card.name}" class="rounded w-full mb-2">
+                    <img src="${card.image}" alt="${card.name}" class="rounded w-full mb-2 card-image-zoom">
                     <p class="font-bold text-sm">${card.name}</p>
                     ${setInfoHTML}
                     <div class="mt-auto pt-2">
