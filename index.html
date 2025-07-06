@@ -67,7 +67,20 @@
         const firebaseErrorBanner = document.getElementById('firebase-error-banner');
 
         const addCardModal = document.getElementById('add-card-modal');
+        const addCardModalCloseBtn = document.getElementById('add-card-modal-close-btn');
+        const addCardForm = document.getElementById('add-card-form');
+        const modalCardImage = document.getElementById('modal-card-image');
+        const modalCardName = document.getElementById('modal-card-name');
+        const modalCardSetInfo = document.getElementById('modal-card-set-info');
+        const modalPriceDisplay = document.getElementById('modal-price-display');
+
         const detailsModal = document.getElementById('details-modal');
+        const detailsModalCloseBtn = document.getElementById('details-modal-close-btn');
+        const detailsCardImage = document.getElementById('details-card-image');
+        const detailsCardName = document.getElementById('details-card-name');
+        const detailsCardSetInfo = document.getElementById('details-card-set-info');
+        const detailsCardQuality = document.getElementById('details-card-quality');
+        const detailsCardPrice = document.getElementById('details-card-price');
         
         let currentUserId = null;
         let searchCache = new Map();
@@ -150,10 +163,6 @@
         const openAddCardModal = (cardId) => {
             const card = searchCache.get(cardId);
             if (!card) return;
-            const modalCardImage = document.getElementById('modal-card-image');
-            const modalCardName = document.getElementById('modal-card-name');
-            const modalCardSetInfo = document.getElementById('modal-card-set-info');
-            const addCardForm = document.getElementById('add-card-form');
             modalCardImage.src = card.images.small;
             modalCardName.textContent = card.name;
             const releaseYear = new Date(card.set.releaseDate).getFullYear();
@@ -164,8 +173,6 @@
             addCardModal.style.display = 'flex';
         };
         const updatePriceDisplay = () => {
-            const addCardForm = document.getElementById('add-card-form');
-            const modalPriceDisplay = document.getElementById('modal-price-display');
             const cardId = addCardForm.dataset.cardId;
             const card = searchCache.get(cardId);
             const quality = addCardForm.quality.value;
@@ -187,7 +194,6 @@
         
         async function handleAddFormSubmit(e) {
             e.preventDefault();
-            const addCardForm = document.getElementById('add-card-form');
             const cardId = addCardForm.dataset.cardId;
             const card = searchCache.get(cardId);
             const quality = addCardForm.quality.value;
@@ -200,11 +206,6 @@
         const openDetailsModal = (docId) => {
             const card = collectionData.get(docId);
             if (!card) return;
-            const detailsCardImage = document.getElementById('details-card-image');
-            const detailsCardName = document.getElementById('details-card-name');
-            const detailsCardSetInfo = document.getElementById('details-card-set-info');
-            const detailsCardQuality = document.getElementById('details-card-quality');
-            const detailsCardPrice = document.getElementById('details-card-price');
             detailsCardImage.src = card.image;
             detailsCardName.textContent = card.name;
             const releaseYear = new Date(card.set.releaseDate).getFullYear();
