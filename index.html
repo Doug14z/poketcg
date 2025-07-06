@@ -34,9 +34,9 @@
 
     <!-- Firebase SDK -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot, collection, deleteDoc, updateDoc, increment, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot, collection, deleteDoc, updateDoc, increment, getDoc } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
 
         // --- ELEMENTOS DO DOM ---
         const searchInput = document.getElementById('search-input');
@@ -198,7 +198,7 @@
                 alert("Não foi possível adicionar a carta. A conexão com a base de dados falhou. Verifique a sua configuração do Firebase.");
                 return;
             }
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+            const appId = "pokemtcgcard"; // Usando o ID do projeto diretamente
             const docId = `${cardData.id}-${cardData.quality}`;
             const cardRef = doc(db, `artifacts/${appId}/users/${currentUserId}/tcg-collection`, docId);
             const docSnap = await getDoc(cardRef);
@@ -214,7 +214,7 @@
             if (button) {
                 const docId = button.dataset.id;
                 if (!docId) return;
-                const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+                const appId = "pokemtcgcard"; // Usando o ID do projeto diretamente
                 const cardRef = doc(db, `artifacts/${appId}/users/${currentUserId}/tcg-collection`, docId);
                 if (button.classList.contains('quantity-plus')) {
                     await updateDoc(cardRef, { quantity: increment(1) });
@@ -302,7 +302,7 @@
 
         const loadMyCollection = () => {
             if (!currentUserId) return;
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+            const appId = "pokemtcgcard"; // Usando o ID do projeto diretamente
             collectionLoader.classList.remove('hidden');
             const collectionRef = collection(db, `artifacts/${appId}/users/${currentUserId}/tcg-collection`);
             onSnapshot(collectionRef, (snapshot) => {
@@ -325,24 +325,19 @@
 
         // --- INICIALIZAÇÃO ROBUSTA ---
         (async () => {
-            // **CORREÇÃO**: Anexar os listeners primeiro para garantir que a UI sempre funcione
-            attachEventListeners();
+            attachEventListeners(); 
             await fetchExchangeRate();
             
             try {
-                // COLE AS SUAS CHAVES DO FIREBASE AQUI!
-                const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { 
+                const firebaseConfig = {
                     apiKey: "AIzaSyDZTXYGAHje-ZFnnhoiNwEUkNAmq63tY68",
                     authDomain: "pokemtcgcard.firebaseapp.com",
                     projectId: "pokemtcgcard",
                     storageBucket: "pokemtcgcard.firebasestorage.app",
                     messagingSenderId: "1056735056128",
                     appId: "1:1056735056128:web:d47f0474b925246c0de3e5",
+                    measurementId: "G-JBPHZ0EQWC"
                 };
-                
-                if (!firebaseConfig.apiKey || firebaseConfig.apiKey.includes("COLE_A_SUA")) {
-                    throw new Error("Configuração do Firebase inválida. Por favor, cole as suas chaves.");
-                }
 
                 const app = initializeApp(firebaseConfig);
                 auth = getAuth(app);
@@ -374,7 +369,7 @@
         </header>
 
         <div id="firebase-error-banner" class="hidden bg-red-500 text-white p-4 rounded-lg mb-8 text-center font-bold">
-            Atenção: A conexão com a base de dados falhou. A sua coleção não pode ser guardada ou carregada. Por favor, verifique a sua configuração do Firebase.
+            Atenção: A conexão com a base de dados falhou. A sua coleção não pode ser guardada ou carregada.
         </div>
 
         <main class="grid grid-cols-1 lg:grid-cols-2 gap-12">
