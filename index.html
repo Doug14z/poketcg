@@ -23,6 +23,11 @@
             margin-top: 1rem;
             margin-bottom: 0.5rem;
         }
+        .deck-builder-card.selected {
+            outline: 4px solid #3b82f6;
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.7);
+        }
         /* Custom scrollbar */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #2d3748; }
@@ -72,14 +77,27 @@
             const addCardForm = document.getElementById('add-card-form');
             const addCardModalCloseBtn = document.getElementById('add-card-modal-close-btn');
             const detailsModal = document.getElementById('details-modal');
-            const detailsModalCloseBtn = document.getElementById('details-modal-close-btn'); // **CORREÇÃO**: Variável adicionada
+            const detailsModalCloseBtn = document.getElementById('details-modal-close-btn'); 
             
+            const deckBuilderSection = document.getElementById('deck-builder-section');
+            const startDeckBuilderBtn = document.getElementById('start-deck-builder-btn');
+            const deckBuilderGrid = document.getElementById('deck-builder-grid');
+            const deckBuilderControls = document.getElementById('deck-builder-controls');
+            const generateDeckBtn = document.getElementById('generate-deck-btn');
+            const cancelDeckBuilderBtn = document.getElementById('cancel-deck-builder-btn');
+            const generatedDeckModal = document.getElementById('generated-deck-modal');
+            const generatedDeckContent = document.getElementById('generated-deck-content');
+            const closeDeckModalBtn = document.getElementById('close-generated-deck-modal-btn');
+            const deckGenerationLoader = document.getElementById('deck-generation-loader');
+
             let currentUserId = null;
             let searchCache = new Map();
             let collectionData = new Map();
             let collectionUnsubscribe = null;
             let usdToBrlRate = 5.3;
             let db, auth;
+            let deckBuilderMode = false;
+            let selectedDeckCards = new Set();
 
             // --- CONTROLO DE VISUALIZAÇÃO ---
             const showView = (viewId) => {
@@ -259,19 +277,30 @@
                         await deleteDoc(cardRef);
                     }
                 } else if (cardContainer) {
-                    openDetailsModal(cardContainer.dataset.id);
+                    if (deckBuilderMode) {
+                        cardContainer.classList.toggle('selected');
+                        if (selectedDeckCards.has(card.docId)) {
+                            selectedDeckCards.delete(card.docId);
+                        } else {
+                            selectedDeckCards.add(card.docId);
+                        }
+                        generateDeckBtn.disabled = selectedDeckCards.size === 0;
+                    } else {
+                        openDetailsModal(cardContainer.dataset.id);
+                    }
                 }
             };
 
             const renderCollection = () => {
+                const container = deckBuilderMode ? deckBuilderGrid : myCollectionContainer;
                 if (!collectionData) return;
-                myCollectionContainer.innerHTML = '';
+                container.innerHTML = '';
                 let totalCards = 0;
                 let totalValue = 0;
                 let uniqueCards = collectionData.size;
 
                 if (collectionData.size === 0) {
-                    myCollectionContainer.innerHTML = `<p class="text-center text-gray-400 col-span-full">A sua coleção está vazia.</p>`;
+                    container.innerHTML = `<p class="text-center text-gray-400 col-span-full">A sua coleção está vazia.</p>`;
                     collectionCount.textContent = 0;
                     uniqueCollectionCount.textContent = 0;
                     collectionValue.textContent = '0,00';
@@ -286,14 +315,14 @@
                 });
 
                 const groupBy = groupBySelect.value;
-                myCollectionContainer.innerHTML = '';
+                container.innerHTML = '';
 
                 if (groupBy === 'pokedex') {
                     allCards.sort((a, b) => (a.pokedexNumber || 9999) - (b.pokedexNumber || 9999));
-                    allCards.forEach(card => myCollectionContainer.appendChild(createCardElement(card, groupBy)));
+                    allCards.forEach(card => container.appendChild(createCardElement(card, groupBy)));
                 } else if (groupBy === 'value') {
                     allCards.sort((a, b) => (b.acquiredPrice || 0) - (a.acquiredPrice || 0));
-                    allCards.forEach(card => myCollectionContainer.appendChild(createCardElement(card, groupBy)));
+                    allCards.forEach(card => container.appendChild(createCardElement(card, groupBy)));
                 } else {
                     const grouped = {};
                     allCards.forEach(card => {
@@ -306,8 +335,8 @@
                         const groupHeader = document.createElement('div');
                         groupHeader.className = 'group-header';
                         groupHeader.textContent = groupName;
-                        myCollectionContainer.appendChild(groupHeader);
-                        grouped[groupName].forEach(card => myCollectionContainer.appendChild(createCardElement(card, groupBy)));
+                        container.appendChild(groupHeader);
+                        grouped[groupName].forEach(card => container.appendChild(createCardElement(card, groupBy)));
                     }
                 }
 
@@ -324,9 +353,9 @@
                     pokedexInfo = `<p class="font-bold text-sm text-cyan-400 mb-1">Pokédex #${String(card.pokedexNumber).padStart(3, '0')}</p>`;
                 }
                 const cardElement = document.createElement('div');
-                cardElement.className = 'bg-gray-800 p-3 rounded-lg flex flex-col items-center text-center collection-card cursor-pointer transition-colors hover:bg-gray-700';
+                cardElement.className = `bg-gray-800 p-3 rounded-lg flex flex-col items-center text-center collection-card cursor-pointer transition-colors hover:bg-gray-700 ${deckBuilderMode ? 'deck-builder-card' : ''}`;
                 cardElement.dataset.id = card.docId;
-                cardElement.innerHTML = `<div class="pointer-events-none"><img src="${card.image}" alt="${card.name}" class="rounded w-full mb-2">${pokedexInfo}<p class="font-bold text-sm">${card.name}</p><p class="text-xs text-gray-400">${card.set.name} - #${card.number}</p><div class="text-xs font-semibold my-1 px-2 py-0.5 rounded-full ${qualityClass}">${card.quality}</div><p class="text-sm text-blue-300 font-bold mb-2">R$ ${card.acquiredPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p></div><div class="flex items-center gap-2 mt-auto"><button data-id="${card.docId}" class="quantity-minus bg-red-600 hover:bg-red-700 rounded-full w-6 h-6 flex items-center justify-center">-</button><span class="font-bold text-lg">${card.quantity}</span><button data-id="${card.docId}" class="quantity-plus bg-green-600 hover:bg-green-700 rounded-full w-6 h-6 flex items-center justify-center">+</button><button data-id="${card.docId}" class="remove-card ml-2 text-gray-400 hover:text-white">🗑️</button></div>`;
+                cardElement.innerHTML = `<div class="pointer-events-none"><img src="${card.image}" alt="${card.name}" class="rounded w-full mb-2">${pokedexInfo}<p class="font-bold text-sm">${card.name}</p><p class="text-xs text-gray-400">${card.set.name} - #${card.number}</p><div class="text-xs font-semibold my-1 px-2 py-0.5 rounded-full ${qualityClass}">${card.quality}</div><p class="text-sm text-blue-300 font-bold mb-2">R$ ${card.acquiredPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p></div><div class="flex items-center gap-2 mt-auto ${deckBuilderMode ? 'hidden' : ''}"><button data-id="${card.docId}" class="quantity-minus bg-red-600 hover:bg-red-700 rounded-full w-6 h-6 flex items-center justify-center">-</button><span class="font-bold text-lg">${card.quantity}</span><button data-id="${card.docId}" class="quantity-plus bg-green-600 hover:bg-green-700 rounded-full w-6 h-6 flex items-center justify-center">+</button><button data-id="${card.docId}" class="remove-card ml-2 text-gray-400 hover:text-white">🗑️</button></div>`;
                 return cardElement;
             };
 
@@ -342,49 +371,154 @@
                     renderCollection();
                 });
             };
+
+            // --- DECK BUILDER ---
+            const enterDeckBuilderMode = () => {
+                deckBuilderMode = true;
+                myCollectionSection.classList.add('hidden');
+                deckBuilderSection.classList.remove('hidden');
+                selectedDeckCards.clear();
+                renderCollection();
+            };
+
+            const exitDeckBuilderMode = () => {
+                deckBuilderMode = false;
+                myCollectionSection.classList.remove('hidden');
+                deckBuilderSection.classList.add('hidden');
+                renderCollection();
+            };
             
-            // --- INICIALIZAÇÃO ROBUSTA ---
-            searchButton.addEventListener('click', searchCards);
-            searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') searchCards(); });
-            addCardForm.addEventListener('submit', handleAddFormSubmit);
-            addCardModalCloseBtn.addEventListener('click', () => addCardModal.style.display = 'none');
-            detailsModalCloseBtn.addEventListener('click', () => detailsModal.style.display = 'none');
-            myCollectionContainer.addEventListener('click', handleCollectionClick);
-            groupBySelect.addEventListener('change', renderCollection);
-            openAuthModalBtn.addEventListener('click', () => authModal.style.display = 'flex');
-            authModalCloseBtn.addEventListener('click', () => authModal.style.display = 'none');
-            showRegisterBtn.addEventListener('click', () => {
-                loginTab.classList.add('hidden');
-                registerTab.classList.remove('hidden');
-            });
-            showLoginBtn.addEventListener('click', () => {
-                registerTab.classList.add('hidden');
-                loginTab.classList.remove('hidden');
-            });
-            loginForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                try {
-                    await signInWithEmailAndPassword(auth, loginForm.email.value, loginForm.password.value);
-                    authModal.style.display = 'none';
-                } catch (error) {
-                    alert(`Erro ao fazer login: ${error.message}`);
-                }
-            });
-            registerForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                if (registerForm.password.value !== registerForm['confirm-password'].value) {
-                    alert("As senhas não coincidem!");
+            async function generateDeck() {
+                if (selectedDeckCards.size === 0) {
+                    alert("Selecione pelo menos uma carta para ser a base do seu deck.");
                     return;
                 }
-                try {
-                    await createUserWithEmailAndPassword(auth, registerForm.email.value, registerForm.password.value);
-                    authModal.style.display = 'none';
-                } catch (error) {
-                    alert(`Erro ao criar conta: ${error.message}`);
-                }
-            });
-            logoutButton.addEventListener('click', () => signOut(auth));
 
+                deckGenerationLoader.classList.remove('hidden');
+                generatedDeckContent.innerHTML = '';
+                generatedDeckModal.style.display = 'flex';
+
+                const coreCards = Array.from(selectedDeckCards).map(id => collectionData.get(id).name).join(', ');
+                const prompt = `Crie uma lista de deck de 60 cartas para o Pokémon TCG que seja competitiva e funcional, usando as seguintes cartas como base: ${coreCards}. A lista deve incluir Pokémon, Cartas de Treinador e Energias. Além da lista, forneça uma breve explicação da estratégia principal do deck.`;
+                
+                let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
+                const payload = { 
+                    contents: chatHistory,
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "OBJECT",
+                            properties: {
+                                deckName: { type: "STRING" },
+                                strategy: { type: "STRING" },
+                                cards: { 
+                                    type: "ARRAY",
+                                    items: {
+                                        type: "OBJECT",
+                                        properties: {
+                                            name: { type: "STRING" },
+                                            quantity: { type: "NUMBER" }
+                                        },
+                                        required: ["name", "quantity"]
+                                    }
+                                }
+                            },
+                            required: ["deckName", "strategy", "cards"]
+                        }
+                    }
+                };
+                const apiKey = ""; 
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const result = await response.json();
+                    
+                    if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts[0]) {
+                        const deckData = JSON.parse(result.candidates[0].content.parts[0].text);
+                        displayGeneratedDeck(deckData);
+                    } else {
+                        throw new Error("Resposta da API inválida.");
+                    }
+                } catch (error) {
+                    console.error("Erro ao gerar deck:", error);
+                    generatedDeckContent.innerHTML = `<p class="text-red-400">Ocorreu um erro ao gerar o deck. Tente novamente.</p>`;
+                } finally {
+                    deckGenerationLoader.classList.add('hidden');
+                }
+            }
+
+            function displayGeneratedDeck(deck) {
+                let html = `<h3 class="text-2xl font-bold text-amber-400 mb-4">${deck.deckName}</h3>`;
+                html += `<h4 class="font-semibold text-lg mb-2">Estratégia:</h4><p class="text-gray-300 mb-6">${deck.strategy}</p>`;
+                
+                const pokemon = deck.cards.filter(c => c.name.toLowerCase().includes('v') || c.name.toLowerCase().includes('ex') || ['Pikachu', 'Charizard', 'Eevee'].some(p => c.name.includes(p))); // Simple filter
+                const trainers = deck.cards.filter(c => !pokemon.includes(c) && !c.name.includes('Energia'));
+                const energy = deck.cards.filter(c => c.name.includes('Energia'));
+
+                html += `<div class="grid grid-cols-1 md:grid-cols-3 gap-6">`;
+                html += `<div><h5 class="font-bold text-amber-300 mb-2">Pokémon (${pokemon.reduce((a, b) => a + b.quantity, 0)})</h5><ul class="space-y-1">${pokemon.map(c => `<li>${c.quantity}x ${c.name}</li>`).join('')}</ul></div>`;
+                html += `<div><h5 class="font-bold text-amber-300 mb-2">Treinadores (${trainers.reduce((a, b) => a + b.quantity, 0)})</h5><ul class="space-y-1">${trainers.map(c => `<li>${c.quantity}x ${c.name}</li>`).join('')}</ul></div>`;
+                html += `<div><h5 class="font-bold text-amber-300 mb-2">Energias (${energy.reduce((a, b) => a + b.quantity, 0)})</h5><ul class="space-y-1">${energy.map(c => `<li>${c.quantity}x ${c.name}</li>`).join('')}</ul></div>`;
+                html += `</div>`;
+
+                generatedDeckContent.innerHTML = html;
+            }
+            
+            // --- INICIALIZAÇÃO ---
+            function attachEventListeners() {
+                searchButton.addEventListener('click', searchCards);
+                searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') searchCards(); });
+                addCardForm.addEventListener('submit', handleAddFormSubmit);
+                addCardModalCloseBtn.addEventListener('click', () => addCardModal.style.display = 'none');
+                detailsModalCloseBtn.addEventListener('click', () => detailsModal.style.display = 'none');
+                myCollectionContainer.addEventListener('click', handleCollectionClick);
+                deckBuilderGrid.addEventListener('click', handleCollectionClick);
+                groupBySelect.addEventListener('change', renderCollection);
+                openAuthModalBtn.addEventListener('click', () => authModal.style.display = 'flex');
+                authModalCloseBtn.addEventListener('click', () => authModal.style.display = 'none');
+                showRegisterBtn.addEventListener('click', () => {
+                    loginTab.classList.add('hidden');
+                    registerTab.classList.remove('hidden');
+                });
+                showLoginBtn.addEventListener('click', () => {
+                    registerTab.classList.add('hidden');
+                    loginTab.classList.remove('hidden');
+                });
+                loginForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    try {
+                        await signInWithEmailAndPassword(auth, loginForm.email.value, loginForm.password.value);
+                        authModal.style.display = 'none';
+                    } catch (error) {
+                        alert(`Erro ao fazer login: ${error.message}`);
+                    }
+                });
+                registerForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    if (registerForm.password.value !== registerForm['confirm-password'].value) {
+                        alert("As senhas não coincidem!");
+                        return;
+                    }
+                    try {
+                        await createUserWithEmailAndPassword(auth, registerForm.email.value, registerForm.password.value);
+                        authModal.style.display = 'none';
+                    } catch (error) {
+                        alert(`Erro ao criar conta: ${error.message}`);
+                    }
+                });
+                logoutButton.addEventListener('click', () => signOut(auth));
+                startDeckBuilderBtn.addEventListener('click', enterDeckBuilderMode);
+                cancelDeckBuilderBtn.addEventListener('click', exitDeckBuilderMode);
+                generateDeckBtn.addEventListener('click', generateDeck);
+                closeDeckModalBtn.addEventListener('click', () => generatedDeckModal.style.display = 'none');
+            }
+
+            attachEventListeners(); 
             await fetchExchangeRate();
             
             try {
@@ -410,11 +544,13 @@
                         userEmailDisplay.textContent = user.email;
                         loggedInHeader.classList.remove('hidden');
                         loggedOutHeader.classList.add('hidden');
+                        startDeckBuilderBtn.classList.remove('hidden');
                         loadMyCollection();
                     } else {
                         currentUserId = null;
                         loggedInHeader.classList.add('hidden');
                         loggedOutHeader.classList.remove('hidden');
+                        startDeckBuilderBtn.classList.add('hidden');
                         collectionPrompt.classList.remove('hidden');
                         myCollectionContainer.innerHTML = '';
                         collectionCount.textContent = 0;
@@ -495,9 +631,29 @@
                     <div id="collection-prompt" class="hidden text-center p-8 bg-gray-800 rounded-lg">
                         <p class="text-gray-400">Faça login para ver e gerir a sua coleção.</p>
                     </div>
-                    <div class="mb-4"><label for="group-by-select" class="text-sm font-semibold mr-2">Organizar por:</label><select id="group-by-select" class="bg-gray-700 border border-gray-600 rounded-lg px-3 py-1 text-sm"><option value="edition">Edição</option><option value="generation">Geração</option><option value="pokedex">Número da Pokédex</option><option value="value">Valor (Maior para Menor)</option></select></div>
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <label for="group-by-select" class="text-sm font-semibold mr-2">Organizar por:</label>
+                            <select id="group-by-select" class="bg-gray-700 border border-gray-600 rounded-lg px-3 py-1 text-sm">
+                                <option value="edition">Edição</option>
+                                <option value="generation">Geração</option>
+                                <option value="pokedex">Número da Pokédex</option>
+                                <option value="value">Valor (Maior para Menor)</option>
+                            </select>
+                        </div>
+                        <button id="start-deck-builder-btn" class="hidden bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-4 rounded-lg transition-colors text-sm">Criar Deck com IA ✨</button>
+                    </div>
                     <div id="collection-loader" class="loader mx-auto"></div>
                     <div id="my-collection" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-h-[70vh] overflow-y-auto pr-2"></div>
+                </section>
+                <section id="deck-builder-section" class="hidden lg:col-span-1">
+                     <h2 class="text-3xl font-bold mb-4 border-b-2 border-amber-500 pb-2">Assistente de Deck ✨</h2>
+                     <p class="text-gray-400 mb-4">Selecione 1 a 5 cartas da sua coleção para serem a base do seu novo deck.</p>
+                     <div id="deck-builder-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-h-[60vh] overflow-y-auto pr-2"></div>
+                     <div id="deck-builder-controls" class="mt-4 flex gap-4">
+                        <button id="generate-deck-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg transition-colors" disabled>Gerar Deck ✨</button>
+                        <button id="cancel-deck-builder-btn" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 rounded-lg transition-colors">Cancelar</button>
+                     </div>
                 </section>
             </main>
         </div>
@@ -508,6 +664,7 @@
     <div id="auth-modal" class="modal-overlay"><div class="modal-content" style="max-width: 450px;"><div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold">Aceder à Coleção</h2><button id="auth-modal-close-btn" class="text-4xl font-bold text-gray-400 hover:text-white transition-colors">&times;</button></div><div id="login-tab"><h3 class="text-xl font-semibold text-center mb-4">Login</h3><form id="login-form" class="space-y-4"><input class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2" name="email" type="email" placeholder="Email" required><input class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2" name="password" type="password" placeholder="Senha" required><button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg">Entrar</button></form><p class="text-center text-sm text-gray-400 mt-4">Não tem uma conta? <button id="show-register-btn" class="text-blue-400 hover:underline">Crie uma aqui.</button></p></div><div id="register-tab" class="hidden"><h3 class="text-xl font-semibold text-center mb-4">Criar Conta</h3><form id="register-form" class="space-y-4"><input class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2" name="email" type="email" placeholder="Email" required><input class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2" name="password" type="password" placeholder="Senha (mínimo 6 caracteres)" required><input class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2" name="confirm-password" type="password" placeholder="Confirmar Senha" required><button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg">Criar Conta</button></form><p class="text-center text-sm text-gray-400 mt-4">Já tem uma conta? <button id="show-login-btn" class="text-blue-400 hover:underline">Faça login.</button></p></div></div></div>
     <div id="add-card-modal" class="modal-overlay"><div class="modal-content" style="max-width: 450px;"><div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold">Adicionar à Coleção</h2><button id="add-card-modal-close-btn" class="text-4xl font-bold text-gray-400 hover:text-white transition-colors">&times;</button></div><div class="flex flex-col sm:flex-row gap-4"><img id="modal-card-image" src="" alt="Imagem da carta" class="w-full sm:w-1/3 rounded-lg"><form id="add-card-form" class="flex-grow flex flex-col"><h3 id="modal-card-name" class="text-xl font-bold">Nome da Carta</h3><p id="modal-card-set-info" class="text-sm text-gray-400 mb-4">Coleção - #Número</p><div class="mb-4"><label for="quality" class="block mb-2 font-semibold">Qualidade da Carta:</label><select name="quality" id="quality" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2"><option value="Nova">Nova (Mint/NM)</option><option value="Pouco Usada">Pouco Usada (LP)</option><option value="Usada">Usada (Played)</option></select></div><p id="modal-price-display" class="text-lg font-bold text-green-400 mb-6">Valor estimado: R$ 0,00</p><button type="submit" class="mt-auto w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-colors">Confirmar e Adicionar</button></form></div></div></div>
     <div id="details-modal" class="modal-overlay"><div class="modal-content"><div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold">Detalhes da Carta</h2><button id="details-modal-close-btn" class="text-4xl font-bold text-gray-400 hover:text-white transition-colors">&times;</button></div><div class="flex flex-col sm:flex-row gap-4"><img id="details-card-image" src="" alt="Imagem da carta" class="w-full sm:w/3 rounded-lg"><div class="flex-grow"><h3 id="details-card-name" class="text-2xl font-bold">Nome da Carta</h3><p id="details-card-set-info" class="text-md text-gray-400 mb-4">Coleção - #Número</p><div class="mb-4"><p class="font-semibold">Qualidade:</p><p id="details-card-quality" class="text-lg text-blue-300"></p></div><div><p class="font-semibold">Valor Registado:</p><p id="details-card-price" class="text-lg font-bold text-green-400"></p></div></div></div></div></div>
+    <div id="generated-deck-modal" class="modal-overlay"><div class="modal-content"><div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold">Deck Gerado com IA ✨</h2><button id="close-generated-deck-modal-btn" class="text-4xl font-bold text-gray-400 hover:text-white transition-colors">&times;</button></div><div id="deck-generation-loader" class="loader mx-auto"></div><div id="generated-deck-content"></div></div></div>
 
 </body>
 </html>
