@@ -34,11 +34,6 @@
             margin-top: 1rem;
             margin-bottom: 0.5rem;
         }
-        .deck-builder-card.selected {
-            outline: 4px solid #f59e0b;
-            transform: scale(1.05);
-            box-shadow: 0 0 15px rgba(245, 158, 11, 0.7);
-        }
         /* Scrollbar para tema escuro */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #2d3748; }
@@ -89,17 +84,6 @@
             const addCardModalCloseBtn = document.getElementById('add-card-modal-close-btn');
             const detailsModal = document.getElementById('details-modal');
             const detailsModalCloseBtn = document.getElementById('details-modal-close-btn'); 
-            
-            const deckBuilderSection = document.getElementById('deck-builder-section');
-            const startDeckBuilderBtn = document.getElementById('start-deck-builder-btn');
-            const deckBuilderGrid = document.getElementById('deck-builder-grid');
-            const deckBuilderControls = document.getElementById('deck-builder-controls');
-            const generateDeckBtn = document.getElementById('generate-deck-btn');
-            const cancelDeckBuilderBtn = document.getElementById('cancel-deck-builder-btn');
-            const generatedDeckModal = document.getElementById('generated-deck-modal');
-            const generatedDeckContent = document.getElementById('generated-deck-content');
-            const closeDeckModalBtn = document.getElementById('close-generated-deck-modal-btn');
-            const deckGenerationLoader = document.getElementById('deck-generation-loader');
 
             let currentUserId = null;
             let searchCache = new Map();
@@ -107,8 +91,6 @@
             let collectionUnsubscribe = null;
             let usdToBrlRate = 5.3;
             let db, auth;
-            let deckBuilderMode = false;
-            let selectedDeckCards = new Set();
 
             // --- CONTROLO DE VISUALIZAÇÃO ---
             const showView = (viewId) => {
@@ -123,21 +105,6 @@
                 const viewToShow = document.getElementById(viewId);
                 if(viewToShow) viewToShow.classList.remove('hidden');
             };
-
-            // --- MAPEAMENTO DE GERAÇÃO ---
-            const generationMap = {
-                'base1': 1, 'jungle': 1, 'fossil': 1, 'base2': 1, 'basep': 1, 'teamrocket': 1, 'gym1': 1, 'gym2': 1,
-                'neo1': 2, 'neo2': 2, 'neo3': 2, 'neo4': 2, 'ecard1': 2, 'ecard2': 2, 'ecard3': 2,
-                'ex1': 3, 'ex2': 3, 'ex3': 3, 'ex4': 3, 'ex5': 3, 'ex6': 3, 'ex7': 3, 'ex8': 3, 'ex9': 3, 'ex10': 3, 'ex11': 3, 'ex12': 3, 'ex13': 3, 'ex14': 3, 'ex15': 3, 'ex16': 3, 'pop5': 3,
-                'dp1': 4, 'dp2': 4, 'dp3': 4, 'dp4': 4, 'dp5': 4, 'dp6': 4, 'dp7': 4, 'pl1': 4, 'pl2': 4, 'pl3': 4, 'pl4': 4, 'pop9': 4,
-                'hgss1': 5, 'hgss2': 5, 'hgss3': 5, 'hgss4': 5, 'col1': 5,
-                'bw1': 5, 'bw2': 5, 'bw3': 5, 'bw4': 5, 'bw5': 5, 'bw6': 5, 'bw7': 5, 'bw8': 5, 'bw9': 5, 'bw10': 5, 'bw11': 5, 'dv1': 5,
-                'xy0': 6, 'xy1': 6, 'xy2': 6, 'xy3': 6, 'xy4': 6, 'xy5': 6, 'xy6': 6, 'xy7': 6, 'xy8': 6, 'xy9': 6, 'xy10': 6, 'xy11': 6, 'xy12': 6, 'g1': 6,
-                'sm1': 7, 'sm2': 7, 'sm3': 7, 'sm4': 7, 'sm5': 7, 'sm6': 7, 'sm7': 7, 'sm8': 7, 'sm9': 7, 'sm10': 7, 'sm11': 7, 'sm12': 7, 'det1': 7,
-                'swsh1': 8, 'swsh2': 8, 'swsh3': 8, 'swsh4': 8, 'swsh5': 8, 'swsh6': 8, 'swsh7': 8, 'swsh8': 8, 'swsh9': 8, 'swsh10': 8, 'swsh11': 8, 'swsh12': 8, 'cel25': 8, 'pgo': 8,
-                'sv1': 9, 'sv2': 9, 'sv3': 9, 'sv4': 9, 'sv5': 9, 'sv6': 9, 'sv7': 9
-            };
-            const getGeneration = (card) => generationMap[card.set.id] || 'Outra';
 
             // --- CÂMBIO ---
             const fetchExchangeRate = async () => {
@@ -201,7 +168,6 @@
                 modalCardImage.src = card.images.small;
                 modalCardName.textContent = card.name;
                 const releaseYear = new Date(card.set.releaseDate).getFullYear();
-                // AQUI: Adicionando o ícone da coleção no modal
                 modalCardSetInfo.innerHTML = `<span class="flex items-center gap-2">${card.set.name} <img src="${card.set.symbol}" class="h-5" alt="${card.set.name}"></span> ${releaseYear} &bull; #${card.number} / ${card.set.printedTotal}`;
                 addCardForm.dataset.cardId = card.id;
                 addCardForm.reset();
@@ -251,7 +217,6 @@
                 detailsCardImage.src = card.image;
                 detailsCardName.textContent = card.name;
                 const releaseYear = new Date(card.set.releaseDate).getFullYear();
-                // AQUI: Adicionando o ícone da coleção no modal de detalhes
                 detailsCardSetInfo.innerHTML = `<span class="flex items-center gap-2 text-lg">${card.set.name} <img src="${card.set.symbol}" class="h-6" alt="${card.set.name}"></span> <span class="text-sm text-gray-400">${releaseYear} &bull; #${card.number} / ${card.set.printedTotal}</span>`;
                 detailsCardQuality.textContent = card.quality;
                 detailsCardPrice.textContent = `R$ ${card.acquiredPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -292,23 +257,12 @@
                         }
                     }
                 } else if (cardContainer) {
-                    if (deckBuilderMode) {
-                        cardContainer.classList.toggle('selected');
-                        const card = collectionData.get(cardContainer.dataset.id);
-                        if (selectedDeckCards.has(card.docId)) {
-                            selectedDeckCards.delete(card.docId);
-                        } else {
-                            selectedDeckCards.add(card.docId);
-                        }
-                        generateDeckBtn.disabled = selectedDeckCards.size === 0;
-                    } else {
-                        openDetailsModal(cardContainer.dataset.id);
-                    }
+                    openDetailsModal(cardContainer.dataset.id);
                 }
             };
 
             const renderCollection = () => {
-                const container = deckBuilderMode ? deckBuilderGrid : myCollectionContainer;
+                const container = myCollectionContainer;
                 if (!collectionData) return;
                 container.innerHTML = '';
                 let totalCards = 0;
@@ -317,11 +271,9 @@
 
                 if (collectionData.size === 0) {
                     container.innerHTML = `<p class="text-center text-gray-400 col-span-full py-10">A sua coleção está vazia.</p>`;
-                    if (!deckBuilderMode) {
-                        collectionCount.textContent = 0;
-                        uniqueCollectionCount.textContent = 0;
-                        collectionValue.textContent = '0,00';
-                    }
+                    collectionCount.textContent = 0;
+                    uniqueCollectionCount.textContent = 0;
+                    collectionValue.textContent = '0,00';
                     return;
                 }
 
@@ -341,10 +293,10 @@
                 } else if (groupBy === 'value') {
                     allCards.sort((a, b) => (b.acquiredPrice || 0) - (a.acquiredPrice || 0));
                     allCards.forEach(card => container.appendChild(createCardElement(card, groupBy)));
-                } else {
+                } else { // Handles 'edition'
                     const grouped = {};
                     allCards.forEach(card => {
-                        const key = groupBy === 'edition' ? card.set.name : `Geração ${getGeneration(card)}`;
+                        const key = card.set.name;
                         if (!grouped[key]) grouped[key] = [];
                         grouped[key].push(card);
                     });
@@ -357,11 +309,10 @@
                         grouped[groupName].forEach(card => container.appendChild(createCardElement(card, groupBy)));
                     }
                 }
-                if(!deckBuilderMode){
-                    collectionCount.textContent = totalCards;
-                    uniqueCollectionCount.textContent = uniqueCards;
-                    collectionValue.textContent = totalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                }
+                
+                collectionCount.textContent = totalCards;
+                uniqueCollectionCount.textContent = uniqueCards;
+                collectionValue.textContent = totalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             };
 
             const createCardElement = (card, groupBy) => {
@@ -372,11 +323,10 @@
                     pokedexInfo = `<p class="font-bold text-sm text-cyan-400 mb-1">#${String(card.pokedexNumber).padStart(3, '0')}</p>`;
                 }
                 const cardElement = document.createElement('div');
-                cardElement.className = `bg-gray-800 p-3 rounded-lg flex flex-col items-center text-center collection-card cursor-pointer transition-colors hover:bg-gray-700 ${deckBuilderMode ? 'deck-builder-card' : ''}`;
+                cardElement.className = `bg-gray-800 p-3 rounded-lg flex flex-col items-center text-center collection-card cursor-pointer transition-colors hover:bg-gray-700`;
                 cardElement.dataset.id = card.docId;
-                // AQUI: Adicionando o ícone da coleção na carta da coleção
                 const setInfoHTML = `<div class="text-xs text-gray-400 flex items-center justify-center gap-1.5 mt-1"><span>${card.set.name}</span> <img src="${card.set.symbol}" class="h-4" alt="Set Symbol"> <span>#${card.number}</span></div>`;
-                cardElement.innerHTML = `<div class="pointer-events-none"><img src="${card.image}" alt="${card.name}" class="rounded w-full mb-2">${pokedexInfo}<p class="font-bold text-sm">${card.name}</p>${setInfoHTML}<div class="text-xs font-semibold my-1 px-2 py-0.5 rounded-full ${qualityClass}">${card.quality}</div><p class="text-sm text-yellow-400 font-bold mb-2">R$ ${card.acquiredPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p></div><div class="flex items-center gap-2 mt-auto ${deckBuilderMode ? 'hidden' : ''}"><button data-id="${card.docId}" class="quantity-minus bg-red-600 hover:bg-red-700 rounded-full w-6 h-6 flex items-center justify-center">-</button><span class="font-bold text-lg">${card.quantity}</span><button data-id="${card.docId}" class="quantity-plus bg-green-600 hover:bg-green-700 rounded-full w-6 h-6 flex items-center justify-center">+</button><button data-id="${card.docId}" class="remove-card ml-2 text-gray-400 hover:text-white" title="Remover da Coleção">❌</button></div>`;
+                cardElement.innerHTML = `<div class="pointer-events-none"><img src="${card.image}" alt="${card.name}" class="rounded w-full mb-2">${pokedexInfo}<p class="font-bold text-sm">${card.name}</p>${setInfoHTML}<div class="text-xs font-semibold my-1 px-2 py-0.5 rounded-full ${qualityClass}">${card.quality}</div><p class="text-sm text-yellow-400 font-bold mb-2">R$ ${card.acquiredPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p></div><div class="flex items-center gap-2 mt-auto"><button data-id="${card.docId}" class="quantity-minus bg-red-600 hover:bg-red-700 rounded-full w-6 h-6 flex items-center justify-center">-</button><span class="font-bold text-lg">${card.quantity}</span><button data-id="${card.docId}" class="quantity-plus bg-green-600 hover:bg-green-700 rounded-full w-6 h-6 flex items-center justify-center">+</button><button data-id="${card.docId}" class="remove-card ml-2 text-gray-400 hover:text-white" title="Remover da Coleção">❌</button></div>`;
                 return cardElement;
             };
 
@@ -392,103 +342,6 @@
                     renderCollection();
                 });
             };
-
-            // --- DECK BUILDER ---
-            const enterDeckBuilderMode = () => {
-                deckBuilderMode = true;
-                myCollectionSection.classList.add('hidden');
-                deckBuilderSection.classList.remove('hidden');
-                selectedDeckCards.clear();
-                renderCollection();
-            };
-
-            const exitDeckBuilderMode = () => {
-                deckBuilderMode = false;
-                myCollectionSection.classList.remove('hidden');
-                deckBuilderSection.classList.add('hidden');
-                renderCollection();
-            };
-            
-            async function generateDeck() {
-                if (selectedDeckCards.size === 0) {
-                    alert("Selecione pelo menos uma carta para ser a base do seu deck.");
-                    return;
-                }
-
-                deckGenerationLoader.classList.remove('hidden');
-                generatedDeckContent.innerHTML = '';
-                generatedDeckModal.style.display = 'flex';
-
-                const coreCards = Array.from(selectedDeckCards).map(id => collectionData.get(id).name).join(', ');
-                const prompt = `Crie uma lista de deck de 60 cartas para o Pokémon TCG que seja competitiva e funcional, usando as seguintes cartas como base: ${coreCards}. A lista deve incluir Pokémon, Cartas de Treinador e Energias. Além da lista, forneça uma breve explicação da estratégia principal do deck. O formato da resposta deve ser um JSON.`;
-                
-                let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
-                const payload = { 
-                    contents: chatHistory,
-                    generationConfig: {
-                        responseMimeType: "application/json",
-                        responseSchema: {
-                            type: "OBJECT",
-                            properties: {
-                                deckName: { type: "STRING" },
-                                strategy: { type: "STRING" },
-                                cards: { 
-                                    type: "ARRAY",
-                                    items: {
-                                        type: "OBJECT",
-                                        properties: {
-                                            name: { type: "STRING" },
-                                            quantity: { type: "NUMBER" }
-                                        },
-                                        required: ["name", "quantity"]
-                                    }
-                                }
-                            },
-                            required: ["deckName", "strategy", "cards"]
-                        }
-                    }
-                };
-                const apiKey = ""; 
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-
-                try {
-                    const response = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-                    const result = await response.json();
-                    
-                    if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts[0]) {
-                        const deckData = JSON.parse(result.candidates[0].content.parts[0].text);
-                        displayGeneratedDeck(deckData);
-                    } else {
-                        throw new Error("Resposta da API inválida.");
-                    }
-                } catch (error) {
-                    console.error("Erro ao gerar deck:", error);
-                    generatedDeckContent.innerHTML = `<p class="text-red-400">Ocorreu um erro ao gerar o deck. Tente novamente.</p>`;
-                } finally {
-                    deckGenerationLoader.classList.add('hidden');
-                }
-            }
-
-            function displayGeneratedDeck(deck) {
-                let html = `<h3 class="text-2xl font-bold text-yellow-400 mb-4">${deck.deckName}</h3>`;
-                html += `<h4 class="font-semibold text-lg mb-2 text-gray-200" style="font-family: 'Poppins', sans-serif;">Estratégia:</h4><p class="text-gray-300 mb-6">${deck.strategy}</p>`;
-                
-                const pokemon = deck.cards.filter(c => c.name.toLowerCase().includes('v') || c.name.toLowerCase().includes('ex') || ['Pikachu', 'Charizard', 'Eevee'].some(p => c.name.includes(p))); // Simple filter
-                const trainers = deck.cards.filter(c => !pokemon.includes(c) && !c.name.includes('Energia'));
-                const energy = deck.cards.filter(c => c.name.includes('Energia'));
-
-                html += `<div class="grid grid-cols-1 md:grid-cols-3 gap-6" style="font-family: 'Poppins', sans-serif;">`;
-                html += `<div><h5 class="font-bold text-yellow-300 mb-2">Pokémon (${pokemon.reduce((a, b) => a + b.quantity, 0)})</h5><ul class="space-y-1">${pokemon.map(c => `<li>${c.quantity}x ${c.name}</li>`).join('')}</ul></div>`;
-                html += `<div><h5 class="font-bold text-yellow-300 mb-2">Treinadores (${trainers.reduce((a, b) => a + b.quantity, 0)})</h5><ul class="space-y-1">${trainers.map(c => `<li>${c.quantity}x ${c.name}</li>`).join('')}</ul></div>`;
-                html += `<div><h5 class="font-bold text-yellow-300 mb-2">Energias (${energy.reduce((a, b) => a + b.quantity, 0)})</h5><ul class="space-y-1">${energy.map(c => `<li>${c.quantity}x ${c.name}</li>`).join('')}</ul></div>`;
-                html += `</div>`;
-
-                generatedDeckContent.innerHTML = html;
-            }
             
             // --- INICIALIZAÇÃO ROBUSTA ---
             searchButton.addEventListener('click', searchCards);
@@ -498,7 +351,6 @@
             addCardModalCloseBtn.addEventListener('click', () => addCardModal.style.display = 'none');
             detailsModalCloseBtn.addEventListener('click', () => detailsModal.style.display = 'none');
             myCollectionContainer.addEventListener('click', handleCollectionClick);
-            deckBuilderGrid.addEventListener('click', handleCollectionClick);
             groupBySelect.addEventListener('change', renderCollection);
             openAuthModalBtn.addEventListener('click', () => authModal.style.display = 'flex');
             authModalCloseBtn.addEventListener('click', () => authModal.style.display = 'none');
@@ -543,10 +395,6 @@
                 }
             });
             logoutButton.addEventListener('click', () => signOut(auth));
-            startDeckBuilderBtn.addEventListener('click', enterDeckBuilderMode);
-            cancelDeckBuilderBtn.addEventListener('click', exitDeckBuilderMode);
-            generateDeckBtn.addEventListener('click', generateDeck);
-            closeDeckModalBtn.addEventListener('click', () => generatedDeckModal.style.display = 'none');
 
             await fetchExchangeRate();
             
@@ -573,20 +421,18 @@
                         userEmailDisplay.textContent = user.displayName || user.email;
                         loggedInHeader.classList.remove('hidden');
                         loggedOutHeader.classList.add('hidden');
-                        startDeckBuilderBtn.classList.remove('hidden');
                         loadMyCollection();
                         showView('app-view');
                     } else {
                         currentUserId = null;
                         loggedInHeader.classList.add('hidden');
                         loggedOutHeader.classList.remove('hidden');
-                        startDeckBuilderBtn.classList.add('hidden');
                         collectionPrompt.classList.remove('hidden');
                         myCollectionContainer.innerHTML = '';
                         collectionCount.textContent = 0;
                         uniqueCollectionCount.textContent = 0;
                         collectionValue.textContent = '0,00';
-                        showView('app-view'); // Mostra a app mesmo sem login
+                        showView('app-view');
                     }
                 });
 
@@ -636,24 +482,13 @@
                             <label for="group-by-select" class="text-sm font-semibold mr-2">Organizar por:</label>
                             <select id="group-by-select" class="bg-gray-700 border border-gray-600 rounded-lg px-3 py-1 text-sm">
                                 <option value="edition">Edição</option>
-                                <option value="generation">Geração</option>
                                 <option value="pokedex">Pokédex</option>
                                 <option value="value">Valor</option>
                             </select>
                         </div>
-                        <button id="start-deck-builder-btn" class="hidden bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-colors text-sm">Criar Deck com IA ✨</button>
                     </div>
                     <div id="collection-loader" class="loader mx-auto hidden"></div>
                     <div id="my-collection" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-h-[70vh] overflow-y-auto pr-2"></div>
-                </section>
-                <section id="deck-builder-section" class="hidden lg:col-span-1">
-                     <h2 class="text-2xl font-bold mb-4 border-b-2 border-yellow-500 pb-2">Assistente de Deck</h2>
-                     <p class="text-gray-400 mb-4" style="font-family: 'Poppins', sans-serif;">Selecione 1 a 5 cartas para a base do seu novo deck.</p>
-                     <div id="deck-builder-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-h-[60vh] overflow-y-auto pr-2"></div>
-                     <div id="deck-builder-controls" class="mt-4 flex gap-4" style="font-family: 'Poppins', sans-serif;">
-                        <button id="generate-deck-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg transition-colors" disabled>Gerar Deck ✨</button>
-                        <button id="cancel-deck-builder-btn" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 rounded-lg transition-colors">Cancelar</button>
-                     </div>
                 </section>
             </main>
         </div>
@@ -663,7 +498,6 @@
     <div id="auth-modal" class="modal-overlay"><div class="modal-content" style="max-width: 450px;"><div class="flex justify-between items-center mb-6"><h2 class="text-xl">Acesso</h2><button id="auth-modal-close-btn" class="text-4xl font-bold text-gray-400 hover:text-white transition-colors">&times;</button></div><div class="space-y-4" style="font-family: 'Poppins', sans-serif;"><button id="google-login-btn" class="w-full flex items-center justify-center gap-3 bg-white text-gray-800 font-bold py-3 rounded-lg hover:bg-gray-200 transition-colors"><svg class="w-6 h-6" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.42-4.55H24v8.51h12.8c-.57 5.4-4.5 9.5-9.8 9.5-6.08 0-11-4.92-11-11s4.92-11 11-11c3.1 0 5.63 1.34 7.4 3.03l6.35-6.35C37.13 6.96 31.25 4 24 4 12.96 4 4.12 10.72 1.03 19.53l8.06 6.22C11.25 18.66 17.13 14 24 14c3.87 0 7.22 1.58 9.72 4.1l-6.85 6.85C25.43 24.52 24.78 24.55 24 24.55c-.78 0-1.43-.03-2.15-.09l-6.85 6.85C17.22 41.34 24 44 24 44c5.96 0 10.9-3.82 12.8-9.09L45.02 31.6C46.33 29.22 46.98 26.93 46.98 24.55z"></path><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24s.92 7.54 2.56 10.78l7.97-6.19z"></path><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path><path fill="none" d="M0 0h48v48H0z"></path></svg><span>Entrar com Google</span></button><div class="relative flex py-2 items-center"><div class="flex-grow border-t border-gray-600"></div><span class="flex-shrink mx-4 text-gray-400">ou</span><div class="flex-grow border-t border-gray-600"></div></div></div><div id="login-tab"><h3 class="text-lg text-center mb-4">Login com E-mail</h3><form id="login-form" class="space-y-4" style="font-family: 'Poppins', sans-serif;"><input class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2" name="email" type="email" placeholder="Email" required><input class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2" name="password" type="password" placeholder="Senha" required><button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg">Entrar</button></form><p class="text-center text-sm text-gray-400 mt-4">Não tem conta? <button id="show-register-btn" class="text-yellow-400 hover:underline">Crie uma.</button></p></div><div id="register-tab" class="hidden"><h3 class="text-lg text-center mb-4">Criar Conta</h3><form id="register-form" class="space-y-4" style="font-family: 'Poppins', sans-serif;"><input class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2" name="email" type="email" placeholder="Email" required><input class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2" name="password" type="password" placeholder="Senha (mín. 6 caracteres)" required><input class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2" name="confirm-password" type="password" placeholder="Confirmar Senha" required><button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg">Criar Conta</button></form><p class="text-center text-sm text-gray-400 mt-4">Já tem conta? <button id="show-login-btn" class="text-yellow-400 hover:underline">Faça login.</button></p></div></div></div>
     <div id="add-card-modal" class="modal-overlay"><div class="modal-content" style="max-width: 450px;"><div class="flex justify-between items-center mb-6"><h2 class="text-xl">Adicionar à Coleção</h2><button id="add-card-modal-close-btn" class="text-4xl font-bold text-gray-400 hover:text-white transition-colors">&times;</button></div><div class="flex flex-col sm:flex-row gap-4"><img id="modal-card-image" src="" alt="Imagem da carta" class="w-full sm:w-1/3 rounded-lg"><form id="add-card-form" class="flex-grow flex flex-col" style="font-family: 'Poppins', sans-serif;"><h3 id="modal-card-name" class="text-xl font-bold"></h3><div id="modal-card-set-info" class="text-sm text-gray-400 mb-4"></div><div class="mb-4"><label for="quality" class="block mb-2 font-semibold">Qualidade:</label><select name="quality" id="quality" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2"><option value="Nova">Nova (Mint/NM)</option><option value="Pouco Usada">Pouco Usada (LP)</option><option value="Usada">Usada (Played)</option></select></div><p id="modal-price-display" class="text-lg font-bold text-yellow-400 mb-6">Valor: R$ 0,00</p><button type="submit" class="mt-auto w-full bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold py-3 px-4 rounded-lg transition-colors">Confirmar</button></form></div></div></div>
     <div id="details-modal" class="modal-overlay"><div class="modal-content"><div class="flex justify-between items-center mb-6"><h2 class="text-2xl">Detalhes da Carta</h2><button id="details-modal-close-btn" class="text-4xl font-bold text-gray-400 hover:text-white transition-colors">&times;</button></div><div class="flex flex-col sm:flex-row gap-6"><img id="details-card-image" src="" alt="Imagem da carta" class="w-full sm:w-1/3 rounded-lg"><div class="flex-grow" style="font-family: 'Poppins', sans-serif;"><h3 id="details-card-name" class="text-2xl font-bold mb-2"></h3><div id="details-card-set-info" class="mb-4"></div><div class="mb-4"><p class="font-semibold">Qualidade:</p><p id="details-card-quality" class="text-lg text-blue-300"></p></div><div><p class="font-semibold">Valor Registado:</p><p id="details-card-price" class="text-lg font-bold text-yellow-400"></p></div></div></div></div></div>
-    <div id="generated-deck-modal" class="modal-overlay"><div class="modal-content"><div class="flex justify-between items-center mb-6"><h2 class="text-xl">Deck Gerado com IA ✨</h2><button id="close-generated-deck-modal-btn" class="text-4xl font-bold text-gray-400 hover:text-white transition-colors">&times;</button></div><div id="deck-generation-loader" class="loader mx-auto"></div><div id="generated-deck-content"></div></div></div>
 
 </body>
 </html>
