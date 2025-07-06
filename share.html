@@ -116,7 +116,8 @@
                 const cardElement = document.createElement('div');
                 cardElement.className = "bg-gray-800 p-3 rounded-lg flex flex-col items-center text-center";
                 
-                const setInfoHTML = `<div class="text-xs text-gray-400 flex items-center justify-center gap-1.5 mt-1"><span>${card.set.name}</span> <img src="${card.set.symbol}" class="h-4" alt="Set Symbol"> <span>#${card.number}</span></div>`;
+                // **AJUSTE APLICADO AQUI**
+                const setInfoHTML = `<div class="text-xs text-gray-400 flex items-center justify-center gap-1.5 mt-1"><span>${card.set.name}</span> <img src="${card.set.images.symbol}" class="h-4" alt="Set Symbol"> <span>#${card.number}</span></div>`;
                 
                 cardElement.innerHTML = `
                     <img src="${card.image}" alt="${card.name}" class="rounded w-full mb-2">
