@@ -180,7 +180,8 @@
                 modalCardImage.src = card.images.small;
                 modalCardName.textContent = card.name;
                 const releaseYear = new Date(card.set.releaseDate).getFullYear();
-                modalCardSetInfo.innerHTML = `<span class="flex items-center gap-2">${card.set.name} <img src="${card.set.symbol}" class="h-5" alt="${card.set.name}"></span> ${releaseYear} &bull; #${card.number} / ${card.set.printedTotal}`;
+                // CAMINHO CORRIGIDO AQUI
+                modalCardSetInfo.innerHTML = `<span class="flex items-center gap-2">${card.set.name} <img src="${card.set.images.symbol}" class="h-5" alt="${card.set.name}"></span> ${releaseYear} &bull; #${card.number} / ${card.set.printedTotal}`;
                 addCardForm.dataset.cardId = card.id;
                 addCardForm.reset();
                 updatePriceDisplay();
@@ -214,7 +215,28 @@
                 const card = searchCache.get(cardId);
                 const quality = addCardForm.quality.value;
                 const price = parseFloat(addCardForm.dataset.currentPrice);
-                const cardData = { id: card.id, name: card.name, image: card.images.small, set: card.set, number: card.number, quality: quality, acquiredPrice: price, pokedexNumber: card.nationalPokedexNumbers ? card.nationalPokedexNumbers[0] : null };
+                // Objeto `set` agora inclui `images` para salvar no Firestore
+                const cardData = { 
+                    id: card.id, 
+                    name: card.name, 
+                    image: card.images.small, 
+                    set: {
+                        id: card.set.id,
+                        name: card.set.name,
+                        series: card.set.series,
+                        printedTotal: card.set.printedTotal,
+                        total: card.set.total,
+                        releaseDate: card.set.releaseDate,
+                        images: {
+                           symbol: card.set.images.symbol,
+                           logo: card.set.images.logo
+                        }
+                    }, 
+                    number: card.number, 
+                    quality: quality, 
+                    acquiredPrice: price, 
+                    pokedexNumber: card.nationalPokedexNumbers ? card.nationalPokedexNumbers[0] : null 
+                };
                 await addCardToCollection(cardData);
                 addCardModal.style.display = 'none';
             }
@@ -230,7 +252,8 @@
                 detailsCardImage.src = card.image;
                 detailsCardName.textContent = card.name;
                 const releaseYear = new Date(card.set.releaseDate).getFullYear();
-                detailsCardSetInfo.innerHTML = `<span class="flex items-center gap-2 text-lg">${card.set.name} <img src="${card.set.symbol}" class="h-6" alt="${card.set.name}"></span> <span class="text-sm text-gray-400">${releaseYear} &bull; #${card.number} / ${card.set.printedTotal}</span>`;
+                // CAMINHO CORRIGIDO AQUI
+                detailsCardSetInfo.innerHTML = `<span class="flex items-center gap-2 text-lg">${card.set.name} <img src="${card.set.images.symbol}" class="h-6" alt="${card.set.name}"></span> <span class="text-sm text-gray-400">${releaseYear} &bull; #${card.number} / ${card.set.printedTotal}</span>`;
                 detailsCardQuality.textContent = card.quality;
                 detailsCardPrice.textContent = `R$ ${card.acquiredPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                 detailsModal.style.display = 'flex';
@@ -338,7 +361,8 @@
                 const cardElement = document.createElement('div');
                 cardElement.className = `bg-gray-800 p-3 rounded-lg flex flex-col items-center text-center collection-card cursor-pointer transition-colors hover:bg-gray-700`;
                 cardElement.dataset.id = card.docId;
-                const setInfoHTML = `<div class="text-xs text-gray-400 flex items-center justify-center gap-1.5 mt-1"><span>${card.set.name}</span> <img src="${card.set.symbol}" class="h-4" alt="Set Symbol"> <span>#${card.number}</span></div>`;
+                // CAMINHO CORRIGIDO AQUI
+                const setInfoHTML = `<div class="text-xs text-gray-400 flex items-center justify-center gap-1.5 mt-1"><span>${card.set.name}</span> <img src="${card.set.images.symbol}" class="h-4" alt="Set Symbol"> <span>#${card.number}</span></div>`;
                 cardElement.innerHTML = `
                     <div class="flex-grow w-full pointer-events-none">
                         <img src="${card.image}" alt="${card.name}" class="rounded w-full mb-2">
