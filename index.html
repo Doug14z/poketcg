@@ -45,7 +45,7 @@
             projectId: "pokemtcgcard",
             storageBucket: "pokemtcgcard.firebasestorage.app",
             messagingSenderId: "1056735056128",
-            appId: "1:1056735056128:web:d47f0474b925246c0de3e5"
+            appId: "1:1056735056128:web:d47f0474b925246c0de3e5""
         };
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         
@@ -368,7 +368,31 @@
     <footer class="text-center p-6 mt-8 border-t border-gray-700"><p class="text-sm text-gray-300">Criado com ❤️ por um Mestre Pokémon.</p><p class="text-xs text-gray-400 mt-2">Dados de cartas e imagens via <a href="https://pokemontcg.io/" target="_blank" rel="noopener noreferrer" class="underline hover:text-blue-300">pokemontcg.io</a>.</p><p class="text-xs text-gray-500 mt-2">*Os valores em Reais (R$) são estimativas baseadas nos preços de mercado do TCGplayer (USD) e convertidos usando uma taxa de câmbio atualizada diariamente. Os valores servem apenas como referência.</p></footer>
     
     <!-- Modais -->
-    <div id="add-card-modal" class="modal-overlay"><div class="modal-content" style="max-width: 450px;"><div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold">Adicionar à Coleção</h2><button id="add-card-modal-close-btn" class="text-4xl font-bold text-gray-400 hover:text-white transition-colors">&times;</button></div><div class="flex flex-col sm:flex-row gap-4"><img id="modal-card-image" src="" alt="Imagem da carta" class="w-full sm:w-1/3 rounded-lg"><form id="add-card-form" class="flex-grow flex flex-col"><h3 id="modal-card-name" class="text-xl font-bold">Nome da Carta</h3><p id="modal-card-set-info" class="text-sm text-gray-400 mb-4">Coleção - #Número</p><div class="mb-4"><label for="quality" class="block mb-2 font-semibold">Qualidade da Carta:</label><select name="quality" id="quality" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2"><option value="Nova">Nova (Mint/NM)</option><option value="Pouco Usada">Pouco Usada (LP)</option><option value="Usada">Usada (Played)</option></select></div><p id="modal-price-display" class="text-lg font-bold text-green-400 mb-6">Valor estimado: R$ 0,00</p><button type="submit" class="mt-auto w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-colors">Confirmar e Adicionar</button></form></div></div></div>
+    <div id="add-card-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 450px;">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">Adicionar à Coleção</h2>
+                <button id="add-card-modal-close-btn" class="text-4xl font-bold text-gray-400 hover:text-white transition-colors">&times;</button>
+            </div>
+            <div class="flex flex-col sm:flex-row gap-4">
+                <img id="modal-card-image" src="" alt="Imagem da carta" class="w-full sm:w-1/3 rounded-lg">
+                <form id="add-card-form" class="flex-grow flex flex-col">
+                    <h3 id="modal-card-name" class="text-xl font-bold">Nome da Carta</h3>
+                    <p id="modal-card-set-info" class="text-sm text-gray-400 mb-4">Coleção - #Número</p>
+                    <div class="mb-4">
+                        <label for="quality" class="block mb-2 font-semibold">Qualidade da Carta:</label>
+                        <select name="quality" id="quality" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2">
+                            <option value="Nova">Nova (Mint/NM)</option>
+                            <option value="Pouco Usada">Pouco Usada (LP)</option>
+                            <option value="Usada">Usada (Played)</option>
+                        </select>
+                    </div>
+                    <p id="modal-price-display" class="text-lg font-bold text-green-400 mb-6">Valor estimado: R$ 0,00</p>
+                    <button type="submit" class="mt-auto w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-colors">Confirmar e Adicionar</button>
+                </form>
+            </div>
+        </div>
+    </div>
     <div id="details-modal" class="modal-overlay"><div class="modal-content"><div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold">Detalhes da Carta</h2><button id="details-modal-close-btn" class="text-4xl font-bold text-gray-400 hover:text-white transition-colors">&times;</button></div><div class="flex flex-col sm:flex-row gap-4"><img id="details-card-image" src="" alt="Imagem da carta" class="w-full sm:w-1/3 rounded-lg"><div class="flex-grow"><h3 id="details-card-name" class="text-2xl font-bold">Nome da Carta</h3><p id="details-card-set-info" class="text-md text-gray-400 mb-4">Coleção - #Número</p><div class="mb-4"><p class="font-semibold">Qualidade:</p><p id="details-card-quality" class="text-lg text-blue-300"></p></div><div><p class="font-semibold">Valor Registado:</p><p id="details-card-price" class="text-lg font-bold text-green-400"></p></div></div></div></div></div>
 
 </body>
