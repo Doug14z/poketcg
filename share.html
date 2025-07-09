@@ -14,13 +14,24 @@
         .loader { border: 4px solid #4b5563; border-top: 4px solid #f59e0b; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        /* EFEITO DE ZOOM NA CARTA */
         .card-image-zoom {
             transition: transform 0.2s ease-in-out;
         }
         .card-image-zoom:hover {
             transform: scale(2);
             z-index: 100;
+        }
+        .group-header {
+            grid-column: 1 / -1;
+            background-color: #374151;
+            color: #d1d5db;
+            padding: 0.5rem 1rem;
+            font-weight: bold;
+            border-radius: 8px;
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.8rem;
         }
 
         ::-webkit-scrollbar { width: 8px; }
@@ -37,6 +48,17 @@
         </header>
 
         <main>
+            <div id="controls-container" class="hidden justify-end items-center mb-4" style="font-family: 'Poppins', sans-serif;">
+                <div>
+                    <label for="group-by-select" class="text-sm font-semibold mr-2">Organizar por:</label>
+                    <select id="group-by-select" class="bg-gray-700 border border-gray-600 rounded-lg px-3 py-1 text-sm">
+                        <option value="pokedex">Pokédex</option>
+                        <option value="edition">Edição</option>
+                        <option value="value">Valor</option>
+                    </select>
+                </div>
+            </div>
+
             <div id="loader" class="loader mx-auto"></div>
             <div id="error-message" class="hidden text-center text-red-400"></div>
             <div id="public-collection" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4"></div>
@@ -69,6 +91,10 @@
             const collectionContainer = document.getElementById('public-collection');
             const title = document.getElementById('collection-title');
             const errorMessage = document.getElementById('error-message');
+            const controlsContainer = document.getElementById('controls-container');
+            const groupBySelect = document.getElementById('group-by-select');
+            
+            let publicCollectionData = [];
 
             const params = new URLSearchParams(window.location.search);
             const userId = params.get('user');
@@ -93,24 +119,52 @@
                 const collectionRef = collection(db, `users/${userId}/tcg-collection`);
                 const collectionSnapshot = await getDocs(collectionRef);
 
-                loader.classList.add('hidden');
-                
                 if (collectionSnapshot.empty) {
+                    loader.classList.add('hidden');
                     collectionContainer.innerHTML = '<p class="col-span-full text-center text-gray-400">Esta coleção está vazia.</p>';
                     return;
                 }
-
-                collectionSnapshot.docs
-                    .map(doc => ({ ...doc.data(), docId: doc.id }))
-                    .sort((a,b) => (a.pokedexNumber || 9999) - (b.pokedexNumber || 9999))
-                    .forEach(card => {
-                        const cardElement = createCardElement(card);
-                        collectionContainer.appendChild(cardElement);
-                    });
+                
+                publicCollectionData = collectionSnapshot.docs.map(doc => ({ ...doc.data(), docId: doc.id }));
+                
+                renderPublicCollection();
+                controlsContainer.classList.remove('hidden');
+                loader.classList.add('hidden');
 
             } catch (error) {
                 console.error("Erro ao buscar coleção pública:", error);
                 showError("Não foi possível carregar a coleção. Verifique o link ou tente mais tarde.");
+            }
+            
+            function renderPublicCollection() {
+                collectionContainer.innerHTML = '';
+                const groupBy = groupBySelect.value;
+                
+                // Cria uma cópia para não alterar a ordem original
+                const allCards = [...publicCollectionData];
+
+                if (groupBy === 'pokedex') {
+                    allCards.sort((a, b) => (a.pokedexNumber || 9999) - (b.pokedexNumber || 9999));
+                    allCards.forEach(card => collectionContainer.appendChild(createCardElement(card)));
+                } else if (groupBy === 'value') {
+                    allCards.sort((a, b) => (b.acquiredPrice || 0) - (a.acquiredPrice || 0));
+                    allCards.forEach(card => collectionContainer.appendChild(createCardElement(card)));
+                } else { // Edição
+                    const grouped = {};
+                    allCards.forEach(card => {
+                        const key = card.set.name;
+                        if (!grouped[key]) grouped[key] = [];
+                        grouped[key].push(card);
+                    });
+                    const sortedGroupKeys = Object.keys(grouped).sort();
+                    for (const groupName of sortedGroupKeys) {
+                        const groupHeader = document.createElement('div');
+                        groupHeader.className = 'group-header';
+                        groupHeader.textContent = groupName;
+                        collectionContainer.appendChild(groupHeader);
+                        grouped[groupName].forEach(card => collectionContainer.appendChild(createCardElement(card)));
+                    }
+                }
             }
 
             function showError(message) {
@@ -141,6 +195,8 @@
                 `;
                 return cardElement;
             }
+            
+            groupBySelect.addEventListener('change', renderPublicCollection);
         });
     </script>
 </body>
