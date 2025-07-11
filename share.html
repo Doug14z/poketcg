@@ -201,7 +201,7 @@
             async function renderPublicCollection() {
                 collectionContainer.innerHTML = '';
                 const groupBy = groupBySelect.value;
-                const allCards = [...publicCollectionData];
+                const allCards = [...publicCollectionData].filter(c => c && c.set && c.set.id); // Filtro de segurança
                 
                 if (groupBy === 'pokedex' || groupBy === 'value') {
                     collectionContainer.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4';
@@ -212,15 +212,14 @@
                     collectionContainer.className = 'flex flex-col gap-4';
                     const grouped = {};
                     allCards.forEach(card => {
-                        const key = card.set.id;
-                        if (!grouped[key]) grouped[key] = [];
-                        grouped[key].push(card);
+                        if (!grouped[card.set.id]) grouped[card.set.id] = [];
+                        grouped[card.set.id].push(card);
                     });
                     
                     const sortedGroupKeys = Object.keys(grouped).sort((a, b) => new Date(grouped[b][0].set.releaseDate) - new Date(grouped[a][0].set.releaseDate));
 
-                    for (const groupKey of sortedGroupKeys) {
-                        const cardsInGroup = grouped[groupKey];
+                    for (const setId of sortedGroupKeys) {
+                        const cardsInGroup = grouped[setId];
                         const groupName = cardsInGroup[0].set.name;
                         const uniqueOwnedIds = new Set(cardsInGroup.map(c => c.id));
                         const setTotal = cardsInGroup[0].set.printedTotal;
@@ -252,17 +251,17 @@
                         const loadButton = document.createElement('button');
                         loadButton.className = "col-span-full bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold py-2 px-4 rounded-lg transition-colors";
                         loadButton.textContent = 'Ver Coleção Completa';
-                        loadButton.dataset.setId = groupKey;
+                        loadButton.dataset.setId = setId;
                         
                         loadButton.addEventListener('click', async (e) => {
                             const btn = e.currentTarget;
-                            const setId = btn.dataset.setId;
+                            const currentSetId = btn.dataset.setId;
                             const grid = btn.nextElementSibling;
                             btn.textContent = 'Carregando...';
                             btn.disabled = true;
 
                             try {
-                                const setResponse = await fetch(`https://api.pokemontcg.io/v2/cards?q=set.id:${setId}&orderBy=number&pageSize=250`);
+                                const setResponse = await fetch(`https://api.pokemontcg.io/v2/cards?q=set.id:${currentSetId}&orderBy=number&pageSize=250`);
                                 if (!setResponse.ok) throw new Error(`API returned status ${setResponse.status}`);
                                 const setData = await setResponse.json();
                                 const fullSetCards = setData.data;
@@ -270,7 +269,7 @@
                                 grid.innerHTML = '';
                                 
                                 const ownedCardMap = new Map();
-                                publicCollectionData.filter(c => c.set.id === setId).forEach(c => ownedCardMap.set(c.id, c));
+                                publicCollectionData.filter(c => c.set.id === currentSetId).forEach(c => ownedCardMap.set(c.id, c));
                                 
                                 fullSetCards.forEach(apiCard => {
                                     if (ownedCardMap.has(apiCard.id)) {
@@ -342,7 +341,8 @@
                 element.className = "bg-gray-900/50 p-3 rounded-lg flex flex-col items-center text-center opacity-60";
                 
                 element.innerHTML = `
-                    <p class="font-bold text-lg invisible">#000</p> <img src="${cardBackUrl}" alt="Verso da carta" class="rounded w-full mb-2" title="${apiCard.name} (Faltando)">
+                    <p class="font-bold text-lg invisible">#000</p>
+                    <img src="${cardBackUrl}" alt="Verso da carta" class="rounded w-full mb-2" title="${apiCard.name} (Faltando)">
                     <p class="font-bold text-sm text-gray-400">${apiCard.name}</p>
                     <div class="text-xs text-gray-500 flex items-center justify-center gap-1.5 mt-1"><span>#${apiCard.number}</span></div>
                     <div class="mt-auto pt-2">
