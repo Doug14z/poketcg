@@ -101,12 +101,35 @@
             let usdToBrlRate = 5.3;
             let db, auth;
 
-            // ++ CORREÇÃO DEFINITIVA DA FUNÇÃO SHOWVIEW ++
+            const portugueseSetNames = {
+                '151': '151',
+                'destinos de paldea': 'Paldean Fates',
+                'fenda paradoxal': 'Paradox Rift',
+                'chamas obsidiana': 'Obsidian Flames',
+                'obsidiana em chamas': 'Obsidian Flames',
+                'evoluções em paldea': 'Paldea Evolved',
+                'escarlate e violeta': 'Scarlet & Violet',
+                'realeza absoluta': 'Crown Zenith',
+                'tempestade prateada': 'Silver Tempest',
+                'origem perdida': 'Lost Origin',
+                'astros cintilantes': 'Brilliant Stars',
+                'golpe fusão': 'Fusion Strike',
+                'céus em evolução': 'Evolving Skies',
+                'reinado arrepiante': 'Chilling Reign',
+                'estilos de batalha': 'Battle Styles',
+                'destinos brilhantes': 'Shining Fates',
+                'voltagem vívida': 'Vivid Voltage',
+                'escuridão incandescente': 'Darkness Ablaze',
+                'caminho do campeão': 'Champion\'s Path',
+                'espada e escudo': 'Sword & Shield',
+                'ofensiva vapor': 'Steam Siege',
+                'evoluções': 'Evolutions',
+                'forças temporais': 'Temporal Forces'
+            };
+
             const showView = (viewId) => {
                 const appView = document.getElementById('app-view');
-                // Adicione outros IDs de "telas" principais se houver, como 'loading-view', 'auth-view'
                 if(appView) appView.classList.add('hidden');
-
                 const viewToShow = document.getElementById(viewId);
                 if(viewToShow) viewToShow.classList.remove('hidden');
             };
@@ -136,7 +159,7 @@
                 if (searchType === 'card') {
                     searchInput.placeholder = 'Nome da carta ou 58/165';
                 } else {
-                    searchInput.placeholder = 'Nome da edição (ex: 151)';
+                    searchInput.placeholder = 'Nome da edição (ex: Fenda Paradoxal)';
                 }
             };
             
@@ -156,7 +179,12 @@
                     const searchType = document.querySelector('input[name="search-type"]:checked').value;
 
                     if (searchType === 'set') {
-                        query = `set.name:"${searchTerm}*"`;
+                        let searchName = searchTerm.trim();
+                        const lowerSearchName = searchName.toLowerCase();
+                        if (portugueseSetNames[lowerSearchName]) {
+                            searchName = portugueseSetNames[lowerSearchName];
+                        }
+                        query = `set.name:"${searchName}*"`;
                     } else { // searchType === 'card'
                         const numberSearchRegex = /^(\d+)\/(\d+)$/;
                         const numberMatch = searchTerm.match(numberSearchRegex);
@@ -476,7 +504,6 @@
                 }
             };
 
-            // --- INICIALIZAÇÃO E EVENT LISTENERS ---
             await fetchExchangeRate();
             updateSearchPlaceholder();
 
@@ -539,7 +566,7 @@
                         uniqueCollectionCount.textContent = 0;
                         collectionValue.textContent = '0,00';
                     }
-                    showView('app-view'); // ++ GARANTE QUE A INTERFACE SEJA EXIBIDA ++
+                    showView('app-view');
                 });
             } catch (error) {
                 console.error("ERRO CRÍTICO NA INICIALIZAÇÃO DO FIREBASE:", error);
