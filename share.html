@@ -11,22 +11,69 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Poppins', sans-serif; background-color: #111827; color: #f3f4f6; }
-        h1, h2, .group-header { font-family: 'Press Start 2P', cursive; }
+        h1, h2 { font-family: 'Press Start 2P', cursive; }
+        .group-header { font-family: 'Press Start 2P', cursive; }
         .loader { border: 4px solid #4b5563; border-top: 4px solid #f59e0b; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
         .card-image-zoom { transition: transform 0.2s ease-in-out; }
-        .card-image-zoom:hover { transform: scale(1.1); z-index: 50; }
+        .collection-card:hover .card-image-zoom { transform: scale(1.1); z-index: 50; }
         
-        .group-header {
+        .group-header-wrapper {
             grid-column: 1 / -1;
             background-color: #374151;
-            color: #d1d5db;
             padding: 0.5rem 1rem;
-            font-size: 0.8rem;
             border-radius: 8px;
             margin-top: 1rem;
             margin-bottom: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .group-header-wrapper:hover {
+            background-color: #4b5563;
+        }
+        .group-header {
+            color: #d1d5db;
+            font-weight: bold;
+            font-size: 0.8rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .caret {
+            transition: transform 0.3s ease-in-out;
+        }
+        .caret-open {
+            transform: rotate(90deg);
+        }
+        
+        .progress-bar-container {
+            position: relative;
+            height: 22px;
+            background-color: #111827;
+            border-radius: 8px;
+            border: 2px solid #4b5563;
+            margin-top: 0.5rem;
+            overflow: hidden;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            border-radius: 6px;
+            transition: width 0.5s ease-in-out, background 0.5s ease-in-out;
+        }
+        .progress-bar-text {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #ffffff;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
         }
 
         ::-webkit-scrollbar { width: 8px; }
@@ -45,7 +92,15 @@
         <main>
              <div id="stats-container" class="my-4 text-center hidden" style="font-family: 'Poppins', sans-serif;">
                 <p class="font-semibold text-lg">Valor Estimado da Coleção: <span id="total-value" class="text-yellow-400">R$ 0,00</span></p>
-                <p class="text-xs text-gray-500 mt-1">*Valor estimado em Reais (R$) baseado nos preços de mercado em Dólar (USD) do TCGplayer no momento da adição de cada carta.</p>
+                <p class="text-xs text-gray-500 mt-1">*Valor estimado em Reais (R$) baseado nos preços de mercado em Dólar (USD) do TCGplayer no momento da adição.</p>
+                
+                <div id="overall-progress-section" class="mt-6 max-w-lg mx-auto">
+                    <h2 class="text-lg font-bold mb-2 text-center" style="font-family: 'Poppins',sans-serif;">Progresso da Pokédex Nacional</h2>
+                    <div class="progress-bar-container">
+                        <div id="pokedex-progress-fill" class="progress-bar-fill"></div>
+                        <span id="pokedex-progress-text" class="progress-bar-text">0/0</span>
+                    </div>
+                </div>
             </div>
             
             <div id="controls-container" class="hidden flex justify-end items-center mb-4" style="font-family: 'Poppins', sans-serif;">
@@ -101,10 +156,7 @@
             const params = new URLSearchParams(window.location.search);
             const userId = params.get('user');
 
-            if (!userId) {
-                showError("Nenhum utilizador especificado.");
-                return;
-            }
+            if (!userId) { showError("Nenhum utilizador especificado."); return; }
 
             try {
                 const profileRef = doc(db, 'public_profiles', userId);
@@ -141,19 +193,33 @@
             }
             
             function calculateAndDisplayStats() {
-                // Calcula o valor total e exibe
+                const TOTAL_POKEMON = 1025;
                 const totalValue = publicCollectionData.reduce((sum, card) => sum + (card.acquiredPrice || 0) * card.quantity, 0);
                 totalValueEl.textContent = `R$ ${totalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                
+                const ownedPokedexNumbers = new Set(publicCollectionData.filter(c => c.pokedexNumber).map(c => c.pokedexNumber));
+                const uniquePokemonOwned = ownedPokedexNumbers.size;
+                const pokedexPercentage = TOTAL_POKEMON > 0 ? (uniquePokemonOwned / TOTAL_POKEMON) * 100 : 0;
+                
+                const pokedexProgressFill = document.getElementById('pokedex-progress-fill');
+                const pokedexProgressText = document.getElementById('pokedex-progress-text');
+                
+                pokedexProgressFill.style.width = `${pokedexPercentage}%`;
+                if (pokedexPercentage < 30) { pokedexProgressFill.style.background = 'linear-gradient(to right, #ef4444, #f87171)'; } 
+                else if (pokedexPercentage < 60) { pokedexProgressFill.style.background = 'linear-gradient(to right, #f59e0b, #facc15)'; } 
+                else { pokedexProgressFill.style.background = 'linear-gradient(to right, #22c55e, #4ade80)'; }
+                pokedexProgressText.textContent = `${uniquePokemonOwned} / ${TOTAL_POKEMON}`;
+
                 statsContainer.classList.remove('hidden');
             }
 
             function renderPublicCollection() {
                 collectionContainer.innerHTML = '';
                 const groupBy = groupBySelect.value;
-                
                 const allCards = [...publicCollectionData].filter(c => c && c.set && c.set.id);
 
                 if (groupBy === 'pokedex' || groupBy === 'value') {
+                    collectionContainer.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4';
                     if (groupBy === 'pokedex') {
                         allCards.sort((a, b) => (a.pokedexNumber || 9999) - (b.pokedexNumber || 9999));
                     } else {
@@ -161,6 +227,7 @@
                     }
                     allCards.forEach(card => collectionContainer.appendChild(createCardElement(card, groupBy)));
                 } else { // edition
+                    collectionContainer.className = 'flex flex-col gap-2';
                     const grouped = {};
                     allCards.forEach(card => {
                         if (!grouped[card.set.id]) grouped[card.set.id] = [];
@@ -172,17 +239,51 @@
                     for (const setId of sortedGroupKeys) {
                         const cardsInGroup = grouped[setId];
                         const groupName = cardsInGroup[0].set.name;
+                        const uniqueOwnedIds = new Set(cardsInGroup.map(c => c.id));
+                        const setTotal = cardsInGroup[0].set.printedTotal;
+                        const percentage = setTotal > 0 ? (uniqueOwnedIds.size / setTotal) * 100 : 0;
+                        
+                        const headerWrapper = document.createElement('div');
+                        headerWrapper.className = 'group-header-wrapper';
                         
                         const groupHeader = document.createElement('div');
                         groupHeader.className = 'group-header';
-                        groupHeader.textContent = groupName;
-                        collectionContainer.appendChild(groupHeader);
+                        groupHeader.innerHTML = `<span>${groupName} (${uniqueOwnedIds.size}/${setTotal})</span><span class="caret">▶</span>`;
 
+                        const progressBarContainer = document.createElement('div');
+                        progressBarContainer.className = 'progress-bar-container';
+                        const progressBarFill = document.createElement('div');
+                        progressBarFill.className = 'progress-bar-fill';
+                        progressBarFill.style.width = `${percentage}%`;
+                        if (percentage < 30) { progressBarFill.style.background = 'linear-gradient(to right, #ef4444, #f87171)'; }
+                        else if (percentage < 60) { progressBarFill.style.background = 'linear-gradient(to right, #f59e0b, #facc15)'; }
+                        else { progressBarFill.style.background = 'linear-gradient(to right, #22c55e, #4ade80)'; }
+                        
+                        const progressBarText = document.createElement('span');
+                        progressBarText.className = 'progress-bar-text';
+                        progressBarText.textContent = `${Math.round(percentage)}%`;
+
+                        const cardGrid = document.createElement('div');
+                        cardGrid.className = "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mt-2 hidden";
+                        
                         cardsInGroup.sort((a,b) => {
                             const numA = parseInt(String(a.number).replace(/[^0-9]/g, ''), 10) || 0;
                             const numB = parseInt(String(b.number).replace(/[^0-9]/g, ''), 10) || 0;
                             return numA - numB;
-                        }).forEach(card => collectionContainer.appendChild(createCardElement(card, 'edition')));
+                        }).forEach(card => cardGrid.appendChild(createCardElement(card, 'edition')));
+
+                        headerWrapper.addEventListener('click', () => {
+                            const caret = headerWrapper.querySelector('.caret');
+                            caret.classList.toggle('caret-open');
+                            cardGrid.classList.toggle('hidden');
+                        });
+
+                        progressBarContainer.appendChild(progressBarFill);
+                        progressBarContainer.appendChild(progressBarText);
+                        headerWrapper.appendChild(groupHeader);
+                        headerWrapper.appendChild(progressBarContainer);
+                        collectionContainer.appendChild(headerWrapper);
+                        collectionContainer.appendChild(cardGrid);
                     }
                 }
             }
@@ -196,7 +297,7 @@
             
             function createCardElement(card, groupBy) {
                 const cardElement = document.createElement('div');
-                cardElement.className = "bg-gray-800 p-3 rounded-lg flex flex-col items-center text-center";
+                cardElement.className = "bg-gray-800 p-3 rounded-lg flex flex-col items-center text-center collection-card";
                 
                 let pokedexInfo = '';
                 if (groupBy === 'pokedex' && card.pokedexNumber) {
@@ -215,7 +316,7 @@
                     <img src="${card.image}" alt="${card.name}" class="rounded w-full mb-2 card-image-zoom">
                     <p class="font-bold text-sm">${card.name}</p>
                     ${setInfoHTML}
-                    <div class="mt-auto pt-2 text-center">
+                    <div class="mt-auto pt-2">
                         <p class="text-sm text-yellow-400 font-bold">R$ ${card.acquiredPrice?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || 'N/A'}</p>
                         <span class="font-bold text-lg">${card.quantity}x</span>
                     </div>
