@@ -143,13 +143,10 @@
             let usdToBrlRate = 5.3;
             let db, auth;
 
-            // ++ CORREÇÃO DA FUNÇÃO PARA GARANTIR QUE A PÁGINA SEJA EXIBIDA ++
             const showView = (viewId) => {
-                // Esconde todas as possíveis "telas" principais
                 document.querySelectorAll('.main-view').forEach(view => {
                     view.classList.add('hidden');
                 });
-                // Mostra apenas a tela solicitada
                 const viewToShow = document.getElementById(viewId);
                 if(viewToShow) {
                     viewToShow.classList.remove('hidden');
@@ -484,7 +481,7 @@
                         if (!grouped[key]) grouped[key] = [];
                         grouped[key].push(card);
                     });
-                    const sortedGroupKeys = Object.keys(grouped).sort();
+                    const sortedGroupKeys = Object.keys(grouped).sort((a,b) => new Date(grouped[b][0].set.releaseDate) - new Date(grouped[a][0].set.releaseDate));
                     for (const groupName of sortedGroupKeys) {
                         const cardsInGroup = grouped[groupName];
                         const uniqueOwnedCount = new Set(cardsInGroup.map(c => c.id)).size;
@@ -634,9 +631,8 @@
                 try {
                     const userCredential = await createUserWithEmailAndPassword(auth, registerForm.email.value, password);
                     const user = userCredential.user;
-                    // Salva um perfil inicial com o e-mail como displayName
                     const userDocRef = doc(db, 'users', user.uid);
-                    await setDoc(userDocRef, { displayName: user.email }, { merge: true });
+                    await setDoc(userDocRef, { displayName: user.email.split('@')[0] }, { merge: true });
                     authModal.style.display = 'none';
                 } catch (error) {
                     alert(`Erro ao criar conta: ${error.message}`);
@@ -782,7 +778,7 @@
                             <input type="text" id="search-input" placeholder="Nome da carta ou 58/165" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none" style="font-family: 'Poppins', sans-serif;">
                         </div>
                         <div id="set-select-container" class="w-full hidden">
-                             <select id="set-select" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none" style="font-family: 'Poppins', sans-serif;">
+                             <select id="set-select" class="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none" style="font-family: 'Poppins', sans-serif;">
                                 <option>Carregando edições...</option>
                              </select>
                         </div>
