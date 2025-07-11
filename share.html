@@ -28,20 +28,20 @@
             padding: 0.75rem 1rem;
             border-radius: 8px;
             margin-top: 1rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .group-header-wrapper:hover {
+            background-color: #4b5563;
         }
         
         .set-logo {
-            height: 80px;
+            height: 80px; /* Tamanho aumentado */
             width: 80px;
             object-fit: contain;
-            cursor: pointer;
-            transition: transform 0.2s ease-in-out;
             flex-shrink: 0;
         }
-        .set-logo:hover {
-            transform: scale(1.1);
-        }
-        
+
         .stack-badge {
             position: absolute;
             top: 8px;
@@ -144,6 +144,7 @@
         </div>
     </div>
 
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
         import { getFirestore, doc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
@@ -208,8 +209,8 @@
                 
                 calculateAndDisplayStats();
                 renderPublicCollection();
-                controlsContainer.classList.remove('hidden');
                 controlsContainer.classList.add('flex');
+                controlsContainer.classList.remove('hidden');
                 loader.classList.add('hidden');
 
             } catch (error) {
@@ -267,12 +268,12 @@
                         headerWrapper.className = 'group-header-wrapper';
                         
                         const headerContent = document.createElement('div');
-                        headerContent.className = 'flex items-center gap-4 cursor-pointer';
+                        headerContent.className = 'flex items-center gap-4';
                         
                         const logoImg = document.createElement('img');
                         logoImg.src = set.images.logo || set.images.symbol;
                         logoImg.alt = `Logo de ${set.name}`;
-                        logoImg.className = 'h-16 w-16 object-contain';
+                        logoImg.className = 'set-logo';
                         
                         const infoDiv = document.createElement('div');
                         infoDiv.className = 'flex-grow';
@@ -300,7 +301,7 @@
                         cardsInGroup.sort((a,b) => (parseInt(String(a.number).replace(/[^0-9]/g, '')) || 0) - (parseInt(String(b.number).replace(/[^0-9]/g, '')) || 0))
                             .forEach(card => cardGrid.appendChild(createCardElement(card, 'edition')));
 
-                        headerContent.addEventListener('click', () => {
+                        headerWrapper.addEventListener('click', () => {
                             cardGrid.classList.toggle('hidden');
                         });
                         
@@ -361,55 +362,4 @@
                     stackModalGrid.appendChild(cardElement);
                 });
                 
-                pokedexStackModal.style.display = 'flex';
-            }
-
-            function showError(message) {
-                loader.classList.add('hidden');
-                errorMessage.textContent = message;
-                errorMessage.classList.remove('hidden');
-                title.textContent = "Erro";
-            }
-            
-            function createCardElement(card, groupBy) {
-                const cardElement = document.createElement('div');
-                cardElement.className = "bg-gray-800 p-3 rounded-lg flex flex-col items-center text-center collection-card";
-                
-                let pokedexInfo = '';
-                if (groupBy === 'pokedex' && card.pokedexNumber) {
-                    pokedexInfo = `<p class="font-bold text-lg text-cyan-400">#${String(card.pokedexNumber).padStart(3, '0')}</p>`;
-                }
-
-                const qualityClasses = { 'Nova': 'bg-green-600 text-white', 'Pouco Usada': 'bg-yellow-500 text-gray-900', 'Usada': 'bg-red-600 text-white' };
-                const qualityClass = qualityClasses[card.quality] || 'bg-gray-500';
-
-                let setInfoHTML = '';
-                if(card.set && card.set.name && card.number) {
-                    const symbolUrl = (card.set.images && card.set.images.symbol) ? card.set.images.symbol : '';
-                    const symbolImg = symbolUrl ? `<img src="${symbolUrl}" class="h-4" alt="Set Symbol">` : '';
-                    setInfoHTML = `<div class="text-xs text-gray-400 flex items-center justify-center gap-1.5 mt-1"><span>${card.set.name}</span> ${symbolImg} <span>#${card.number}</span></div>`;
-                }
-                
-                cardElement.innerHTML = `
-                    ${pokedexInfo}
-                    <img src="${card.image}" alt="${card.name}" class="rounded w-full mb-2 card-image-zoom">
-                    <p class="font-bold text-sm">${card.name}</p>
-                    ${setInfoHTML}
-                    <div class="flex flex-wrap items-center justify-center gap-1 my-2">
-                        <div class="text-xs font-semibold px-2 py-0.5 rounded-full ${qualityClass}">${card.quality || ''}</div>
-                        <div class="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-600 text-white">${card.finish || ''}</div>
-                    </div>
-                    <div class="mt-auto pt-1 text-center">
-                        <p class="text-sm text-yellow-400 font-bold">R$ ${card.acquiredPrice?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || 'N/A'}</p>
-                        <span class="font-bold text-lg">${card.quantity}x</span>
-                    </div>
-                `;
-                return cardElement;
-            }
-            
-            groupBySelect.addEventListener('change', renderPublicCollection);
-            stackModalCloseBtn.addEventListener('click', () => pokedexStackModal.style.display = 'none');
-        });
-    </script>
-</body>
-</html>
+                pokedexStackModal.style.display = 'flex
