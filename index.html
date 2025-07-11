@@ -103,7 +103,6 @@
             const profileModalCloseBtn = document.getElementById('profile-modal-close-btn');
             const profileForm = document.getElementById('profile-form');
             const profileNameInput = document.getElementById('profile-name');
-            const profileSocialInput = document.getElementById('profile-social');
             const profileFeedback = document.getElementById('profile-feedback');
 
             const searchInput = document.getElementById('search-input');
@@ -207,7 +206,6 @@
                 let searchTerm = '';
                 let query = '';
                 let postFilter = null;
-
                 if (searchType === 'set') {
                     searchTerm = setSelect.value;
                     if (!searchTerm) { alert('Por favor, selecione uma edição.'); return; }
@@ -228,7 +226,6 @@
                         query = `name:"${searchTerm}*"`;
                     }
                 }
-
                 loader.classList.remove('hidden');
                 searchResultsContainer.innerHTML = '';
                 searchCache.clear();
@@ -237,9 +234,7 @@
                     if (!response.ok) throw new Error('A resposta da rede não foi "ok".');
                     const data = await response.json();
                     let cardsToShow = data.data || [];
-                    if (postFilter) {
-                        cardsToShow = postFilter(cardsToShow);
-                    }
+                    if (postFilter) cardsToShow = postFilter(cardsToShow);
                     displaySearchResults(cardsToShow);
                 } catch (error) {
                     console.error("Falha ao buscar cartas:", error);
@@ -277,12 +272,10 @@
                 const modalCardName = document.getElementById('modal-card-name');
                 const modalCardSetInfo = document.getElementById('modal-card-set-info');
                 const finishSelect = document.getElementById('finish');
-
                 modalCardImage.src = card.images.small;
                 modalCardName.textContent = card.name;
                 const releaseYear = new Date(card.set.releaseDate).getFullYear();
                 modalCardSetInfo.innerHTML = `<span class="flex items-center gap-2">${card.set.name} <img src="${card.set.images.symbol}" class="h-5" alt="${card.set.name}"></span> ${releaseYear} &bull; #${card.number} / ${card.set.printedTotal}`;
-                
                 finishSelect.innerHTML = '';
                 if (card.tcgplayer && card.tcgplayer.prices) {
                     for (const key in card.tcgplayer.prices) {
@@ -312,7 +305,6 @@
                 const quality = addCardForm.quality.value;
                 const finish = addCardForm.finish.value;
                 let priceUsd = 0;
-
                 if (card.tcgplayer && card.tcgplayer.prices && card.tcgplayer.prices[finish]) {
                     const prices = card.tcgplayer.prices[finish];
                     if (prices) {
@@ -576,13 +568,77 @@
             showRegisterBtn.addEventListener('click', () => { loginTab.classList.add('hidden'); registerTab.classList.remove('hidden'); });
             showLoginBtn.addEventListener('click', () => { registerTab.classList.add('hidden'); loginTab.classList.remove('hidden'); });
             loginForm.addEventListener('submit', async (e) => { e.preventDefault(); try { await signInWithEmailAndPassword(auth, loginForm.email.value, loginForm.password.value); authModal.style.display = 'none'; } catch (error) { alert(`Erro ao fazer login: ${error.message}`); }});
-            registerForm.addEventListener('submit', async (e) => { e.preventDefault(); if (registerForm.password.value !== registerForm['confirm-password'].value) { alert("As senhas não coincidem!"); return; } try { await createUserWithEmailAndPassword(auth, registerForm.email.value, registerForm.password.value); authModal.style.display = 'none'; } catch (error) { alert(`Erro ao criar conta: ${error.message}`); }});
+            registerForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const password = registerForm.password.value;
+                const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z]).{6,}$/;
+                if (!passwordRegex.test(password)) {
+                    alert("A senha deve ter no mínimo 6 caracteres, incluindo uma letra maiúscula e uma minúscula.");
+                    return;
+                }
+                if (password !== registerForm['confirm-password'].value) {
+                    alert("As senhas não coincidem!");
+                    return;
+                }
+                try {
+                    const userCredential = await createUserWithEmailAndPassword(auth, registerForm.email.value, password);
+                    const user = userCredential.user;
+                    const userDocRef = doc(db, 'users', user.uid);
+                    await setDoc(userDocRef, { displayName: user.email.split('@')[0] }, { merge: true });
+                    authModal.style.display = 'none';
+                } catch (error) {
+                    alert(`Erro ao criar conta: ${error.message}`);
+                }
+            });
             logoutButton.addEventListener('click', () => signOut(auth));
             shareCollectionBtn.addEventListener('click', async () => { if (!currentUserId) return; const profileRef = doc(db, 'public_profiles', currentUserId); const profileSnap = await getDoc(profileRef); updateShareUI(profileSnap.exists() && profileSnap.data().isPublic); shareModal.style.display = 'flex'; });
-            publicToggle.addEventListener('change', async () => { if (!currentUserId) return; const isPublic = publicToggle.checked; const profileRef = doc(db, 'public_profiles', currentUserId); try { await setDoc(profileRef, { isPublic: isPublic, ownerName: auth.currentUser.displayName || auth.currentUser.email }, { merge: true }); updateShareUI(isPublic); } catch (error) { console.error("Erro ao atualizar status público:", error); alert("Não foi possível atualizar o status da sua coleção."); }});
+            publicToggle.addEventListener('change', async () => { if (!currentUserId) return; const isPublic = publicToggle.checked; const profileRef = doc(db, 'public_profiles', currentUserId); try { const userProfileDoc = await getDoc(doc(db, "users", currentUserId)); const displayName = userProfileDoc.exists() && userProfileDoc.data().displayName ? userProfileDoc.data().displayName : auth.currentUser.email; await setDoc(profileRef, { isPublic: isPublic, ownerName: displayName }, { merge: true }); updateShareUI(isPublic); } catch (error) { console.error("Erro ao atualizar status público:", error); alert("Não foi possível atualizar o status da sua coleção."); }});
             copyLinkBtn.addEventListener('click', () => { if (!publicToggle.checked) return; shareableLink.select(); document.execCommand('copy'); copyFeedback.textContent = 'Link copiado!'; setTimeout(() => { copyFeedback.textContent = '' }, 2000); });
             shareModalCloseBtn.addEventListener('click', () => shareModal.style.display = 'none');
-            
+            openProfileModalBtn.addEventListener('click', async () => {
+                profileFeedback.textContent = '';
+                profileForm.reset();
+                const userDocRef = doc(db, 'users', currentUserId);
+                const docSnap = await getDoc(userDocRef);
+                if (docSnap.exists()) {
+                    profileNameInput.value = docSnap.data().displayName || '';
+                    profileSocialInput.value = docSnap.data().socialUrl || '';
+                }
+                profileModal.style.display = 'flex';
+            });
+            profileModalCloseBtn.addEventListener('click', () => profileModal.style.display = 'none');
+            profileForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const newDisplayName = profileNameInput.value.trim();
+                const newSocialUrl = profileSocialInput.value.trim();
+                if (!newDisplayName) {
+                    alert("O nome/nick não pode estar vazio.");
+                    return;
+                }
+                const userDocRef = doc(db, 'users', currentUserId);
+                const publicProfileRef = doc(db, 'public_profiles', currentUserId);
+                try {
+                    await setDoc(userDocRef, { displayName: newDisplayName, socialUrl: newSocialUrl }, { merge: true });
+                    const publicProfileSnap = await getDoc(publicProfileRef);
+                    if (publicProfileSnap.exists() && publicProfileSnap.data().isPublic) {
+                       await setDoc(publicProfileRef, { ownerName: newDisplayName }, { merge: true });
+                    }
+                    if (auth.currentUser.displayName !== newDisplayName) {
+                      await updateProfile(auth.currentUser, { displayName: newDisplayName });
+                    }
+                    userEmailDisplay.textContent = newDisplayName;
+                    profileFeedback.textContent = "Perfil salvo com sucesso!";
+                    profileFeedback.classList.remove('text-red-400');
+                    profileFeedback.classList.add('text-green-400');
+                    setTimeout(() => profileModal.style.display = 'none', 1500);
+                } catch (error) {
+                    console.error("Erro ao salvar perfil:", error);
+                    profileFeedback.textContent = "Erro ao salvar o perfil.";
+                    profileFeedback.classList.remove('text-green-400');
+                    profileFeedback.classList.add('text-red-400');
+                }
+            });
+
             try {
                 const firebaseConfig = {
                     apiKey: "AIzaSyDZTXYGAHje-ZFnnhoiNwEUkNAmq63tY68",
@@ -596,11 +652,14 @@
                 const app = initializeApp(firebaseConfig);
                 auth = getAuth(app);
                 db = getFirestore(app);
-                onAuthStateChanged(auth, user => {
+                onAuthStateChanged(auth, async user => {
                     if (collectionUnsubscribe) collectionUnsubscribe();
                     if (user) {
                         currentUserId = user.uid;
-                        userEmailDisplay.textContent = user.displayName || user.email;
+                        const userDocRef = doc(db, 'users', user.uid);
+                        const userDocSnap = await getDoc(userDocRef);
+                        const displayName = userDocSnap.exists() && userDocSnap.data().displayName ? userDocSnap.data().displayName : user.email;
+                        userEmailDisplay.textContent = displayName;
                         loggedInHeader.classList.remove('hidden');
                         loggedOutHeader.classList.add('hidden');
                         shareCollectionBtn.classList.remove('hidden');
@@ -713,7 +772,7 @@
         <footer class="text-center p-6 mt-8 border-t border-gray-700 text-xs" style="font-family: 'Poppins', sans-serif;"><p class="text-sm text-gray-300">Criado com ❤️ por um Mestre Pokémon.</p><p class="text-gray-400 mt-2">Dados de cartas e imagens via <a href="https://pokemontcg.io/" target="_blank" rel="noopener noreferrer" class="underline hover:text-yellow-300">pokemontcg.io</a>.</p><p class="text-gray-500 mt-2">*Os valores em Reais (R$) são estimativas baseadas nos preços de mercado do TCGplayer (USD) e convertidos usando uma taxa de câmbio atualizada diariamente. Os valores servem apenas como referência.</p></footer>
     </div>
     
-    <div id="auth-modal" class="modal-overlay"><div class="modal-content" style="max-width: 450px;"><div class="flex justify-between items-center mb-6"><h2 class="text-xl">Acesso</h2><button id="auth-modal-close-btn" class="text-4xl font-bold text-gray-400 hover:text-white transition-colors">&times;</button></div><div id="login-tab"><h3 class="text-lg text-center mb-4">Login com E-mail</h3><form id="login-form" class="space-y-4" style="font-family: 'Poppins', sans-serif;"><input class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2" name="email" type="email" placeholder="Email" required><input class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2" name="password" type="password" placeholder="Senha" required><button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg">Entrar</button></form><p class="text-center text-sm text-gray-400 mt-4">Não tem conta? <button id="show-register-btn" class="text-yellow-400 hover:underline">Crie uma.</button></p></div><div id="register-tab" class="hidden"><h3 class="text-lg text-center mb-4">Criar Conta</h3><form id="register-form" class="space-y-4" style="font-family: 'Poppins', sans-serif;"><input class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2" name="email" type="email" placeholder="Email" required><input class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2" name="password" type="password" placeholder="Senha (mín. 6 caracteres)" required><input class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2" name="confirm-password" type="password" placeholder="Confirmar Senha" required><button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg">Criar Conta</button></form><p class="text-center text-sm text-gray-400 mt-4">Já tem conta? <button id="show-login-btn" class="text-yellow-400 hover:underline">Faça login.</button></p></div></div></div>
+    <div id="auth-modal" class="modal-overlay"><div class="modal-content" style="max-width: 450px;"><div class="flex justify-between items-center mb-6"><h2 class="text-xl">Acesso</h2><button id="auth-modal-close-btn" class="text-4xl font-bold text-gray-400 hover:text-white transition-colors">&times;</button></div><div id="login-tab"><h3 class="text-lg text-center mb-4">Login com E-mail</h3><form id="login-form" class="space-y-4" style="font-family: 'Poppins', sans-serif;"><input class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2" name="email" type="email" placeholder="Email" required><input class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2" name="password" type="password" placeholder="Senha" required><button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg">Entrar</button></form><p class="text-center text-sm text-gray-400 mt-4">Não tem conta? <button id="show-register-btn" class="text-yellow-400 hover:underline">Crie uma.</button></p></div><div id="register-tab" class="hidden"><h3 class="text-lg text-center mb-4">Criar Conta</h3><form id="register-form" class="space-y-4" style="font-family: 'Poppins', sans-serif;"><input class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2" name="email" type="email" placeholder="Email" required><input class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2" name="password" type="password" placeholder="Senha" required><p class="text-xs text-gray-400 -mt-2 pl-1">Mínimo 6 caracteres, com uma letra maiúscula e uma minúscula.</p><input class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2" name="confirm-password" type="password" placeholder="Confirmar Senha" required><button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg">Criar Conta</button></form><p class="text-center text-sm text-gray-400 mt-4">Já tem conta? <button id="show-login-btn" class="text-yellow-400 hover:underline">Faça login.</button></p></div></div></div>
     <div id="add-card-modal" class="modal-overlay"><div class="modal-content" style="max-width: 450px;"><div class="flex justify-between items-center mb-6"><h2 class="text-xl">Adicionar à Coleção</h2><button id="add-card-modal-close-btn" class="text-4xl font-bold text-gray-400 hover:text-white transition-colors">&times;</button></div><div class="flex flex-col sm:flex-row gap-4"><img id="modal-card-image" src="" alt="Imagem da carta" class="w-full sm:w-1/3 rounded-lg"><form id="add-card-form" class="flex-grow flex flex-col" style="font-family: 'Poppins', sans-serif;"><h3 id="modal-card-name" class="text-xl font-bold"></h3><div id="modal-card-set-info" class="text-sm text-gray-400 mb-4"></div><div class="mb-4"><label for="quality" class="block mb-2 font-semibold">Qualidade:</label><select name="quality" id="quality" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2"><option value="Nova">Nova (Mint/NM)</option><option value="Pouco Usada">Pouco Usada (LP)</option><option value="Usada">Usada (Played)</option></select></div><div class="mb-4"><label for="finish" class="block mb-2 font-semibold">Acabamento:</label><select name="finish" id="finish" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2"></select></div><p id="modal-price-display" class="text-lg font-bold text-yellow-400 mb-6">Valor: R$ 0,00</p><button type="submit" class="mt-auto w-full bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold py-3 px-4 rounded-lg transition-colors">Confirmar</button></form></div></div></div>
     
     <div id="details-modal" class="modal-overlay"><div class="modal-content"><div class="flex justify-between items-center mb-6"><h2 class="text-2xl">Detalhes da Carta</h2><button id="details-modal-close-btn" class="text-4xl font-bold text-gray-400 hover:text-white transition-colors">&times;</button></div><div class="flex flex-col sm:flex-row gap-6"><img id="details-card-image" src="" alt="Imagem da carta" class="w-full sm:w-1/3 rounded-lg"><div class="flex-grow" style="font-family: 'Poppins', sans-serif;"><h3 id="details-card-name" class="text-2xl font-bold mb-2"></h3><div id="details-card-set-info" class="mb-4"></div><div class="mb-4"><p class="font-semibold">Qualidade:</p><p id="details-card-quality" class="text-lg text-blue-300"></p></div><div class="mb-4"><p class="font-semibold">Acabamento:</p><p id="details-card-finish" class="text-lg text-cyan-300"></p></div><div><p class="font-semibold">Valor Registado:</p><p id="details-card-price" class="text-lg font-bold text-yellow-400"></p><p class="text-xs text-gray-400 mt-2 italic">*Valor em R$ é uma estimativa baseada na cotação do dólar e preços do TCGplayer (EUA).</p></div></div></div></div></div>
