@@ -27,7 +27,6 @@
             margin-bottom: 0.5rem;
         }
         
-        /* Estilo para a Vitrine de Edições */
         .set-showcase {
             background-color: #1f2937;
             border: 1px solid #374151;
@@ -153,7 +152,7 @@
                 
                 calculateAndDisplayStats();
                 
-                await renderPublicCollection();
+                renderPublicCollection();
                 controlsContainer.classList.remove('hidden');
                 loader.classList.add('hidden');
 
@@ -168,13 +167,13 @@
                 statsContainer.classList.remove('hidden');
             }
 
-            async function renderPublicCollection() {
+            function renderPublicCollection() {
                 backToSetsBtn.classList.add('hidden');
-                collectionContainer.innerHTML = '';
                 const groupBy = groupBySelect.value;
                 const allCards = [...publicCollectionData].filter(c => c && c.set && c.set.id);
 
                 if (groupBy === 'pokedex' || groupBy === 'value') {
+                    collectionContainer.innerHTML = '';
                     collectionContainer.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4';
                     if (groupBy === 'pokedex') allCards.sort((a, b) => (a.pokedexNumber || 9999) - (b.pokedexNumber || 9999));
                     else allCards.sort((a, b) => (b.acquiredPrice || 0) - (a.acquiredPrice || 0));
@@ -208,13 +207,14 @@
             function createSetShowcaseElement(cardsInGroup) {
                 const set = cardsInGroup[0].set;
                 const uniqueOwnedIds = new Set(cardsInGroup.map(c => c.id));
+                const imageUrl = set.images.logo || set.images.symbol; // Fallback para símbolo se a logo não existir
                 
                 const showcaseElement = document.createElement('div');
                 showcaseElement.className = 'set-showcase';
                 showcaseElement.innerHTML = `
-                    <img src="${set.images.logo}" alt="Logo da Edição ${set.name}">
-                    <div class="font-bold text-white">${set.name}</div>
-                    <div class="text-sm text-yellow-400">${uniqueOwnedIds.size} / ${set.printedTotal}</div>
+                    <img src="${imageUrl}" alt="Logo da Edição ${set.name}" class="h-24 object-contain">
+                    <div class="font-bold text-white mt-2">${set.name}</div>
+                    <div class="text-sm text-yellow-400 font-semibold">${uniqueOwnedIds.size} / ${set.printedTotal}</div>
                 `;
                 return showcaseElement;
             }
