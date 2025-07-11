@@ -40,7 +40,6 @@
             transform: translateX(100%);
             background-color: #34D399;
         }
-        /* Estilo para os botões de rádio */
         input[type="radio"] {
             accent-color: #f59e0b;
         }
@@ -54,7 +53,6 @@
         import { getFirestore, doc, setDoc, onSnapshot, collection, deleteDoc, updateDoc, increment, getDoc } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
 
         document.addEventListener('DOMContentLoaded', async () => {
-            // --- ELEMENTOS DO DOM ---
             const searchInput = document.getElementById('search-input');
             const searchButton = document.getElementById('search-button');
             const searchTypeRadios = document.querySelectorAll('input[name="search-type"]');
@@ -103,6 +101,16 @@
             let usdToBrlRate = 5.3;
             let db, auth;
 
+            // ++ CORREÇÃO DEFINITIVA DA FUNÇÃO SHOWVIEW ++
+            const showView = (viewId) => {
+                const appView = document.getElementById('app-view');
+                // Adicione outros IDs de "telas" principais se houver, como 'loading-view', 'auth-view'
+                if(appView) appView.classList.add('hidden');
+
+                const viewToShow = document.getElementById(viewId);
+                if(viewToShow) viewToShow.classList.remove('hidden');
+            };
+
             const getFinishDisplayName = (key) => {
                 const names = {
                     normal: 'Normal', holofoil: 'Holo', reverseHolofoil: 'Reverse Holo',
@@ -110,14 +118,6 @@
                     unlimitedHolofoil: 'Unlimited Holo'
                 };
                 return names[key] || key;
-            };
-
-            const showView = (viewId) => {
-                const appView = document.getElementById('app-view');
-                if (appView) appView.classList.add('hidden');
-                
-                const viewToShow = document.getElementById(viewId);
-                if (viewToShow) viewToShow.classList.remove('hidden');
             };
 
             const fetchExchangeRate = async () => {
@@ -492,63 +492,16 @@
             
             openAuthModalBtn.addEventListener('click', () => authModal.style.display = 'flex');
             authModalCloseBtn.addEventListener('click', () => authModal.style.display = 'none');
-            showRegisterBtn.addEventListener('click', () => {
-                loginTab.classList.add('hidden'); registerTab.classList.remove('hidden');
-            });
-            showLoginBtn.addEventListener('click', () => {
-                registerTab.classList.add('hidden'); loginTab.classList.remove('hidden');
-            });
-            loginForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                try {
-                    await signInWithEmailAndPassword(auth, loginForm.email.value, loginForm.password.value);
-                    authModal.style.display = 'none';
-                } catch (error) { alert(`Erro ao fazer login: ${error.message}`); }
-            });
-            registerForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                if (registerForm.password.value !== registerForm['confirm-password'].value) {
-                    alert("As senhas não coincidem!"); return;
-                }
-                try {
-                    await createUserWithEmailAndPassword(auth, registerForm.email.value, registerForm.password.value);
-                    authModal.style.display = 'none';
-                } catch (error) { alert(`Erro ao criar conta: ${error.message}`); }
-            });
-            googleLoginBtn.addEventListener('click', async () => {
-                const provider = new GoogleAuthProvider();
-                try {
-                    await signInWithPopup(auth, provider);
-                    authModal.style.display = 'none';
-                } catch (error) { console.error("Erro no login com Google:", error); alert(`Erro ao fazer login com Google: ${error.message}`); }
-            });
+            showRegisterBtn.addEventListener('click', () => { loginTab.classList.add('hidden'); registerTab.classList.remove('hidden'); });
+            showLoginBtn.addEventListener('click', () => { registerTab.classList.add('hidden'); loginTab.classList.remove('hidden'); });
+            loginForm.addEventListener('submit', async (e) => { e.preventDefault(); try { await signInWithEmailAndPassword(auth, loginForm.email.value, loginForm.password.value); authModal.style.display = 'none'; } catch (error) { alert(`Erro ao fazer login: ${error.message}`); }});
+            registerForm.addEventListener('submit', async (e) => { e.preventDefault(); if (registerForm.password.value !== registerForm['confirm-password'].value) { alert("As senhas não coincidem!"); return; } try { await createUserWithEmailAndPassword(auth, registerForm.email.value, registerForm.password.value); authModal.style.display = 'none'; } catch (error) { alert(`Erro ao criar conta: ${error.message}`); }});
+            googleLoginBtn.addEventListener('click', async () => { const provider = new GoogleAuthProvider(); try { await signInWithPopup(auth, provider); authModal.style.display = 'none'; } catch (error) { console.error("Erro no login com Google:", error); alert(`Erro ao fazer login com Google: ${error.message}`); }});
             logoutButton.addEventListener('click', () => signOut(auth));
 
-            shareCollectionBtn.addEventListener('click', async () => {
-                if (!currentUserId) return;
-                const profileRef = doc(db, 'public_profiles', currentUserId);
-                const profileSnap = await getDoc(profileRef);
-                updateShareUI(profileSnap.exists() && profileSnap.data().isPublic);
-                shareModal.style.display = 'flex';
-            });
-            publicToggle.addEventListener('change', async () => {
-                if (!currentUserId) return;
-                const isPublic = publicToggle.checked;
-                const profileRef = doc(db, 'public_profiles', currentUserId);
-                try {
-                    await setDoc(profileRef, { 
-                        isPublic: isPublic,
-                        ownerName: auth.currentUser.displayName || auth.currentUser.email 
-                    }, { merge: true });
-                    updateShareUI(isPublic);
-                } catch (error) { console.error("Erro ao atualizar status público:", error); alert("Não foi possível atualizar o status da sua coleção."); }
-            });
-            copyLinkBtn.addEventListener('click', () => {
-                if (!publicToggle.checked) return;
-                shareableLink.select(); document.execCommand('copy');
-                copyFeedback.textContent = 'Link copiado!';
-                setTimeout(() => { copyFeedback.textContent = '' }, 2000);
-            });
+            shareCollectionBtn.addEventListener('click', async () => { if (!currentUserId) return; const profileRef = doc(db, 'public_profiles', currentUserId); const profileSnap = await getDoc(profileRef); updateShareUI(profileSnap.exists() && profileSnap.data().isPublic); shareModal.style.display = 'flex'; });
+            publicToggle.addEventListener('change', async () => { if (!currentUserId) return; const isPublic = publicToggle.checked; const profileRef = doc(db, 'public_profiles', currentUserId); try { await setDoc(profileRef, { isPublic: isPublic, ownerName: auth.currentUser.displayName || auth.currentUser.email }, { merge: true }); updateShareUI(isPublic); } catch (error) { console.error("Erro ao atualizar status público:", error); alert("Não foi possível atualizar o status da sua coleção."); }});
+            copyLinkBtn.addEventListener('click', () => { if (!publicToggle.checked) return; shareableLink.select(); document.execCommand('copy'); copyFeedback.textContent = 'Link copiado!'; setTimeout(() => { copyFeedback.textContent = '' }, 2000); });
             shareModalCloseBtn.addEventListener('click', () => shareModal.style.display = 'none');
             
             try {
@@ -586,12 +539,11 @@
                         uniqueCollectionCount.textContent = 0;
                         collectionValue.textContent = '0,00';
                     }
-                    // CORREÇÃO: Esta linha garante que a interface principal seja exibida
-                    showView('app-view');
+                    showView('app-view'); // ++ GARANTE QUE A INTERFACE SEJA EXIBIDA ++
                 });
             } catch (error) {
                 console.error("ERRO CRÍTICO NA INICIALIZAÇÃO DO FIREBASE:", error);
-                myCollectionSection.innerHTML = `<p class="text-center text-red-400 p-4 bg-red-900/50 rounded-lg">Não foi possível carregar a sua coleção. Verifique a configuração do Firebase.</p>`;
+                myCollectionSection.innerHTML = `<p class="text-center text-red-400 p-4 bg-red-900/50 rounded-lg">Não foi possível carregar a sua coleção.</p>`;
             }
         });
     </script>
@@ -606,24 +558,4 @@
                 <div id="logged-in-header" class="hidden">
                     <div class="text-right">
                         <p id="user-email-display" class="text-sm text-gray-300" style="font-family: 'Poppins', sans-serif;"></p>
-                        <button id="logout-button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition-colors text-sm mt-1">Sair</button>
-                    </div>
-                </div>
-                <div id="logged-out-header">
-                    <button id="open-auth-modal-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors" style="font-family: 'Poppins', sans-serif;">Login / Criar Conta</button>
-                </div>
-            </header>
-
-            <main class="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                <section>
-                    <h2 class="text-2xl font-bold mb-4 border-b-2 border-yellow-500 pb-2">Buscar Cartas</h2>
-                    
-                    <div class="mb-4" style="font-family: 'Poppins', sans-serif;">
-                        <span class="font-semibold mr-4">Procurar por:</span>
-                        <div class="inline-flex items-center gap-4">
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="radio" name="search-type" value="card" class="w-4 h-4" checked>
-                                <span>Carta</span>
-                            </label>
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="radio" name="search-
+                        <button id="logout-button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-
