@@ -27,30 +27,35 @@
             margin-bottom: 0.5rem;
         }
         
-        .set-showcase {
-            background-color: #1f2937;
-            border: 1px solid #374151;
-            border-radius: 16px;
-            padding: 1rem;
+        .progress-bar-container {
+            position: relative;
+            height: 22px;
+            background-color: #111827;
+            border-radius: 8px;
+            border: 2px solid #4b5563;
+            margin-top: 0.5rem;
+            overflow: hidden;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            border-radius: 6px;
+            transition: width 0.5s ease-in-out, background 0.5s ease-in-out;
+        }
+        .progress-bar-text {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             display: flex;
-            flex-direction: column;
             align-items: center;
-            justify-content: space-between;
-            text-align: center;
-            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-            cursor: pointer;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #ffffff;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
         }
-        .set-showcase:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.25);
-        }
-        .set-showcase img {
-            height: 128px; /* Aumentado para dar mais destaque */
-            width: auto;
-            object-fit: contain;
-            margin-bottom: 1rem;
-        }
-        
+
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #2d3748; }
         ::-webkit-scrollbar-thumb { background: #4a5568; border-radius: 4px; }
@@ -68,15 +73,14 @@
              <div id="stats-container" class="my-4 text-center hidden" style="font-family: 'Poppins', sans-serif;">
                 <p class="font-semibold text-lg">Valor Estimado da Coleção: <span id="total-value" class="text-yellow-400">R$ 0,00</span></p>
                 <p class="text-xs text-gray-500 mt-1">*Valor estimado em Reais (R$) baseado nos preços de mercado em Dólar (USD) do TCGplayer no momento da adição.</p>
-             </div>
+            </div>
             
             <div id="controls-container" class="hidden flex justify-end items-center mb-4" style="font-family: 'Poppins', sans-serif;">
-                 <button id="back-to-sets-btn" class="hidden bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg mr-auto">← Voltar para Todas as Edições</button>
                 <div>
                     <label for="group-by-select" class="text-sm font-semibold mr-2">Organizar por:</label>
                     <select id="group-by-select" class="bg-gray-700 border border-gray-600 rounded-lg px-3 py-1 text-sm">
-                        <option value="edition" selected>Edição</option>
                         <option value="pokedex">Pokédex</option>
+                        <option value="edition">Edição</option>
                         <option value="value">Valor</option>
                     </select>
                 </div>
@@ -84,11 +88,11 @@
 
             <div id="loader" class="loader mx-auto"></div>
             <div id="error-message" class="hidden text-center text-red-400"></div>
-            <div id="public-collection" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
+            <div id="public-collection" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4"></div>
         </main>
         
         <footer class="text-center p-6 mt-8 border-t border-gray-700 text-xs" style="font-family: 'Poppins', sans-serif;">
-            <p class="text-sm text-gray-300">Coleção visualizada através do <a href="./index.html" class="underline hover:text-yellow-300">Gerenciador TCG</a>.</p>
+            <p class="text-sm text-gray-300">Coleção visualizada através do Gerenciador TCG.</p>
         </footer>
     </div>
 
@@ -118,10 +122,8 @@
             const groupBySelect = document.getElementById('group-by-select');
             const statsContainer = document.getElementById('stats-container');
             const totalValueEl = document.getElementById('total-value');
-            const backToSetsBtn = document.getElementById('back-to-sets-btn');
             
             let publicCollectionData = [];
-            let groupedEditions = {};
 
             const params = new URLSearchParams(window.location.search);
             const userId = params.get('user');
@@ -152,9 +154,9 @@
                 publicCollectionData = collectionSnapshot.docs.map(doc => ({ ...doc.data(), docId: doc.id }));
                 
                 calculateAndDisplayStats();
-                
                 renderPublicCollection();
                 controlsContainer.classList.remove('hidden');
+                controlsContainer.classList.add('flex');
                 loader.classList.add('hidden');
 
             } catch (error) {
@@ -169,91 +171,84 @@
             }
 
             function renderPublicCollection() {
-                backToSetsBtn.classList.add('hidden');
+                collectionContainer.innerHTML = '';
                 const groupBy = groupBySelect.value;
                 const allCards = [...publicCollectionData].filter(c => c && c.set && c.set.id);
+                
+                collectionContainer.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4';
 
                 if (groupBy === 'pokedex' || groupBy === 'value') {
-                    collectionContainer.innerHTML = '';
-                    collectionContainer.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4';
                     if (groupBy === 'pokedex') allCards.sort((a, b) => (a.pokedexNumber || 9999) - (b.pokedexNumber || 9999));
                     else allCards.sort((a, b) => (b.acquiredPrice || 0) - (a.acquiredPrice || 0));
                     allCards.forEach(card => collectionContainer.appendChild(createCardElement(card, groupBy)));
                 } else { // edition
-                    renderSetShowcase();
-                }
-            }
-            
-            function renderSetShowcase() {
-                collectionContainer.innerHTML = '';
-                collectionContainer.className = 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6';
-                backToSetsBtn.classList.add('hidden');
-
-                groupedEditions = {};
-                publicCollectionData.forEach(card => {
-                    if (!card.set || !card.set.id) return;
-                    if (!groupedEditions[card.set.id]) groupedEditions[card.set.id] = [];
-                    groupedEditions[card.set.id].push(card);
-                });
-
-                const sortedGroupKeys = Object.keys(groupedEditions).sort((a, b) => new Date(groupedEditions[b][0].set.releaseDate) - new Date(groupedEditions[a][0].set.releaseDate));
-
-                for (const setId of sortedGroupKeys) {
-                    const showcase = createSetShowcaseElement(groupedEditions[setId]);
-                    showcase.addEventListener('click', () => renderSingleSetView(setId));
-                    collectionContainer.appendChild(showcase);
-                }
-            }
-
-            function createSetShowcaseElement(cardsInGroup) {
-                const set = cardsInGroup[0].set;
-                const uniqueOwnedIds = new Set(cardsInGroup.map(c => c.id));
-                const imageUrl = set.images.logo || set.images.symbol;
-                
-                const showcaseElement = document.createElement('div');
-                showcaseElement.className = 'set-showcase';
-                showcaseElement.innerHTML = `
-                    <img src="${imageUrl}" alt="Logo da Edição ${set.name}">
-                    <div class="font-bold text-white mt-2">${set.name}</div>
-                    <div class="text-sm text-yellow-400 font-semibold">${uniqueOwnedIds.size} / ${set.printedTotal}</div>
-                `;
-                return showcaseElement;
-            }
-
-            async function renderSingleSetView(setId) {
-                collectionContainer.innerHTML = `<div class="loader col-span-full mx-auto my-8"></div>`;
-                backToSetsBtn.classList.remove('hidden');
-
-                try {
-                    const setResponse = await fetch(`https://api.pokemontcg.io/v2/cards?q=set.id:"${setId}"&orderBy=number&pageSize=250`);
-                    if (!setResponse.ok) throw new Error(`API error: ${setResponse.status}`);
-                    const setData = await setResponse.json();
-                    const fullSetCards = setData.data;
-
-                    collectionContainer.innerHTML = '';
                     collectionContainer.className = 'flex flex-col gap-2';
-
-                    const ownedCardMap = new Map();
-                    if(groupedEditions[setId]) {
-                        groupedEditions[setId].forEach(c => ownedCardMap.set(c.id, c));
-                    }
-                    
-                    const cardGrid = document.createElement('div');
-                    cardGrid.className = "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mt-2";
-
-                    fullSetCards.forEach(apiCard => {
-                        if (ownedCardMap.has(apiCard.id)) {
-                            cardGrid.appendChild(createCardElement(ownedCardMap.get(apiCard.id), 'edition'));
-                        } else {
-                            cardGrid.appendChild(createMissingCardElement(apiCard));
-                        }
+                    const grouped = {};
+                    allCards.forEach(card => {
+                        if (!grouped[card.set.id]) grouped[card.set.id] = [];
+                        grouped[card.set.id].push(card);
                     });
+                    
+                    const sortedGroupKeys = Object.keys(grouped).sort((a, b) => new Date(grouped[b][0].set.releaseDate) - new Date(grouped[a][0].set.releaseDate));
 
-                    collectionContainer.appendChild(cardGrid);
+                    for (const setId of sortedGroupKeys) {
+                        const cardsInGroup = grouped[setId];
+                        const set = cardsInGroup[0].set;
+                        const uniqueOwnedIds = new Set(cardsInGroup.map(c => c.id));
+                        const percentage = set.printedTotal > 0 ? (uniqueOwnedIds.size / set.printedTotal) * 100 : 0;
+                        
+                        const headerWrapper = document.createElement('div');
+                        headerWrapper.className = 'group-header-wrapper';
 
-                } catch (err) {
-                    console.error("Erro ao carregar dados da edição:", err);
-                    collectionContainer.innerHTML = `<p class="col-span-full text-red-400 text-center">Erro ao carregar os dados completos desta edição.</p>`;
+                        const headerContent = document.createElement('div');
+                        headerContent.className = 'flex items-center gap-4';
+                        
+                        const logoImg = document.createElement('img');
+                        logoImg.src = set.images.logo || set.images.symbol;
+                        logoImg.alt = `Logo de ${set.name}`;
+                        logoImg.className = 'h-16 w-16 object-contain cursor-pointer transition-transform hover:scale-110';
+                        
+                        const infoDiv = document.createElement('div');
+                        infoDiv.className = 'flex-grow';
+                        
+                        const groupHeaderName = document.createElement('div');
+                        groupHeaderName.className = 'group-header-name text-sm';
+                        groupHeaderName.textContent = `${set.name} (${uniqueOwnedIds.size}/${set.printedTotal})`;
+                        
+                        const progressBarContainer = document.createElement('div');
+                        progressBarContainer.className = 'progress-bar-container';
+                        const progressBarFill = document.createElement('div');
+                        progressBarFill.className = 'progress-bar-fill';
+                        progressBarFill.style.width = `${percentage}%`;
+                        if (percentage < 30) { progressBarFill.style.background = 'linear-gradient(to right, #ef4444, #f87171)'; }
+                        else if (percentage < 60) { progressBarFill.style.background = 'linear-gradient(to right, #f59e0b, #facc15)'; }
+                        else { progressBarFill.style.background = 'linear-gradient(to right, #22c55e, #4ade80)'; }
+                        
+                        const progressBarText = document.createElement('span');
+                        progressBarText.className = 'progress-bar-text';
+                        progressBarText.textContent = `${Math.round(percentage)}%`;
+
+                        progressBarContainer.appendChild(progressBarFill);
+                        progressBarContainer.appendChild(progressBarText);
+                        infoDiv.appendChild(groupHeaderName);
+                        infoDiv.appendChild(progressBarContainer);
+                        headerContent.appendChild(logoImg);
+                        headerContent.appendChild(infoDiv);
+                        headerWrapper.appendChild(headerContent);
+                        
+                        const cardGrid = document.createElement('div');
+                        cardGrid.className = "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mt-2 hidden";
+                        
+                        cardsInGroup.sort((a,b) => (parseInt(String(a.number).replace(/[^0-9]/g, '')) || 0) - (parseInt(String(b.number).replace(/[^0-9]/g, '')) || 0))
+                            .forEach(card => cardGrid.appendChild(createCardElement(card, 'edition')));
+
+                        logoImg.addEventListener('click', () => {
+                            cardGrid.classList.toggle('hidden');
+                        });
+                        
+                        collectionContainer.appendChild(headerWrapper);
+                        collectionContainer.appendChild(cardGrid);
+                    }
                 }
             }
 
@@ -266,44 +261,34 @@
             
             function createCardElement(card, groupBy) {
                 const cardElement = document.createElement('div');
-                cardElement.className = "bg-gray-800 p-3 rounded-lg flex flex-col items-center text-center collection-card";
+                cardElement.className = "bg-gray-800 p-3 rounded-lg flex flex-col items-center text-center";
                 
                 let pokedexInfo = '';
                 if (groupBy === 'pokedex' && card.pokedexNumber) {
                     pokedexInfo = `<p class="font-bold text-lg text-cyan-400">#${String(card.pokedexNumber).padStart(3, '0')}</p>`;
                 }
 
+                let setInfoHTML = '';
+                if(card.set && card.set.name && card.number) {
+                    const symbolUrl = (card.set.images && card.set.images.symbol) ? card.set.images.symbol : '';
+                    const symbolImg = symbolUrl ? `<img src="${symbolUrl}" class="h-4" alt="Set Symbol">` : '';
+                    setInfoHTML = `<div class="text-xs text-gray-400 flex items-center justify-center gap-1.5 mt-1"><span>${card.set.name}</span> ${symbolImg} <span>#${card.number}</span></div>`;
+                }
+                
                 cardElement.innerHTML = `
                     ${pokedexInfo}
-                    <img src="${card.images.large}" alt="${card.name}" class="rounded w-full mb-2 card-image-zoom">
-                    <p class="font-bold text-sm mt-1">${card.name}</p>
-                    <div class="mt-auto pt-2 text-center">
+                    <img src="${card.image}" alt="${card.name}" class="rounded w-full mb-2 card-image-zoom">
+                    <p class="font-bold text-sm">${card.name}</p>
+                    ${setInfoHTML}
+                    <div class="mt-auto pt-2">
+                         <p class="text-sm text-yellow-400 font-bold">R$ ${card.acquiredPrice?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || 'N/A'}</p>
                         <span class="font-bold text-lg">${card.quantity}x</span>
-                        <p class="text-xs text-yellow-400 font-semibold">R$ ${card.acquiredPrice?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || 'N/A'}</p>
                     </div>
                 `;
                 return cardElement;
             }
             
-            function createMissingCardElement(apiCard) {
-                const cardBackUrl = 'https://i.imgur.com/5lYagB3.png';
-                const element = document.createElement('div');
-                element.className = "bg-gray-900/50 p-3 rounded-lg flex flex-col items-center text-center opacity-60";
-                
-                element.innerHTML = `
-                    <p class="font-bold text-lg invisible">#000</p>
-                    <img src="${cardBackUrl}" alt="Verso da carta" class="rounded w-full mb-2" title="${apiCard.name} (Faltando)">
-                    <p class="font-bold text-sm text-gray-400 mt-1">${apiCard.name}</p>
-                    <div class="mt-auto pt-2 text-center">
-                        <span class="font-bold text-lg text-gray-600">0x</span>
-                         <p class="text-xs text-gray-600 font-semibold">-</p>
-                    </div>
-                `;
-                return element;
-            }
-            
             groupBySelect.addEventListener('change', renderPublicCollection);
-            backToSetsBtn.addEventListener('click', renderSetShowcase);
         });
     </script>
 </body>
