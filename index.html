@@ -78,17 +78,11 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot, collection, deleteDoc, updateDoc, increment, getDoc } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
 
         document.addEventListener('DOMContentLoaded', async () => {
             // --- ELEMENTOS DO DOM ---
-            const searchInput = document.getElementById('search-input');
-            const searchButton = document.getElementById('search-button');
-            const searchTypeRadios = document.querySelectorAll('input[name="search-type"]');
-            const searchInputContainer = document.getElementById('search-input-container');
-            const setSelectContainer = document.getElementById('set-select-container');
-            const setSelect = document.getElementById('set-select');
             const authModal = document.getElementById('auth-modal');
             const authModalCloseBtn = document.getElementById('auth-modal-close-btn');
             const loginForm = document.getElementById('login-form');
@@ -97,12 +91,27 @@
             const showLoginBtn = document.getElementById('show-login-btn');
             const loginTab = document.getElementById('login-tab');
             const registerTab = document.getElementById('register-tab');
-            const googleLoginBtn = document.getElementById('google-login-btn');
+            
             const loggedOutHeader = document.getElementById('logged-out-header');
             const loggedInHeader = document.getElementById('logged-in-header');
             const openAuthModalBtn = document.getElementById('open-auth-modal-btn');
             const userEmailDisplay = document.getElementById('user-email-display');
             const logoutButton = document.getElementById('logout-button');
+            const openProfileModalBtn = document.getElementById('open-profile-modal-btn');
+            
+            const profileModal = document.getElementById('profile-modal');
+            const profileModalCloseBtn = document.getElementById('profile-modal-close-btn');
+            const profileForm = document.getElementById('profile-form');
+            const profileNameInput = document.getElementById('profile-name');
+            const profileFeedback = document.getElementById('profile-feedback');
+
+            const searchInput = document.getElementById('search-input');
+            const searchButton = document.getElementById('search-button');
+            const searchTypeRadios = document.querySelectorAll('input[name="search-type"]');
+            const searchInputContainer = document.getElementById('search-input-container');
+            const setSelectContainer = document.getElementById('set-select-container');
+            const setSelect = document.getElementById('set-select');
+            
             const searchResultsContainer = document.getElementById('search-results');
             const myCollectionContainer = document.getElementById('my-collection');
             const loader = document.getElementById('loader');
@@ -414,7 +423,7 @@
 
             const renderCollection = () => {
                 const container = myCollectionContainer;
-                const TOTAL_POKEMON = 1025; // Total de Pokémon até a 9ª Geração
+                const TOTAL_POKEMON = 1025;
                 
                 if (!collectionData) return;
                 container.innerHTML = '';
@@ -422,7 +431,6 @@
                 
                 const allCards = Array.from(collectionData.values());
 
-                // Lógica da Barra de Progresso Geral da Pokédex
                 const ownedPokedexNumbers = new Set();
                 allCards.forEach(card => {
                     if (card.pokedexNumber) ownedPokedexNumbers.add(card.pokedexNumber);
@@ -463,7 +471,7 @@
                         allCards.sort((a, b) => (b.acquiredPrice || 0) - (a.acquiredPrice || 0));
                     }
                     allCards.forEach(card => container.appendChild(createCardElement(card, groupBy)));
-                } else { // edition
+                } else { 
                     const grouped = {};
                     allCards.forEach(card => {
                         const key = card.set.name;
@@ -473,7 +481,7 @@
                     const sortedGroupKeys = Object.keys(grouped).sort();
                     for (const groupName of sortedGroupKeys) {
                         const cardsInGroup = grouped[groupName];
-                        const uniqueOwnedCount = cardsInGroup.length;
+                        const uniqueOwnedCount = new Set(cardsInGroup.map(c => c.id)).size;
                         const setTotal = cardsInGroup[0].set.printedTotal;
                         const percentage = setTotal > 0 ? (uniqueOwnedCount / setTotal) * 100 : 0;
 
@@ -505,11 +513,8 @@
                         headerWrapper.appendChild(progressBarContainer);
                         container.appendChild(headerWrapper);
                         
-                        cardsInGroup.sort((a, b) => {
-                            const numA = parseInt(String(a.number).replace(/[^0-9]/g, ''), 10) || 0;
-                            const numB = parseInt(String(b.number).replace(/[^0-9]/g, ''), 10) || 0;
-                            return numA - numB;
-                        }).forEach(card => container.appendChild(createCardElement(card, groupBy)));
+                        cardsInGroup.sort((a, b) => (parseInt(String(a.number).replace(/[^0-9]/g, '')) || 0) - (parseInt(String(b.number).replace(/[^0-9]/g, '')) || 0))
+                            .forEach(card => container.appendChild(createCardElement(card, groupBy)));
                     }
                 }
                 
@@ -586,6 +591,7 @@
                 }
             };
 
+            // --- INICIALIZAÇÃO E EVENT LISTENERS ---
             await fetchExchangeRate();
             await populateSetDropdown();
             toggleSearchMode();
@@ -599,19 +605,78 @@
             detailsModalCloseBtn.addEventListener('click', () => detailsModal.style.display = 'none');
             myCollectionContainer.addEventListener('click', handleCollectionClick);
             groupBySelect.addEventListener('change', renderCollection);
+            
             openAuthModalBtn.addEventListener('click', () => authModal.style.display = 'flex');
             authModalCloseBtn.addEventListener('click', () => authModal.style.display = 'none');
             showRegisterBtn.addEventListener('click', () => { loginTab.classList.add('hidden'); registerTab.classList.remove('hidden'); });
             showLoginBtn.addEventListener('click', () => { registerTab.classList.add('hidden'); loginTab.classList.remove('hidden'); });
+            
             loginForm.addEventListener('submit', async (e) => { e.preventDefault(); try { await signInWithEmailAndPassword(auth, loginForm.email.value, loginForm.password.value); authModal.style.display = 'none'; } catch (error) { alert(`Erro ao fazer login: ${error.message}`); }});
-            registerForm.addEventListener('submit', async (e) => { e.preventDefault(); if (registerForm.password.value !== registerForm['confirm-password'].value) { alert("As senhas não coincidem!"); return; } try { await createUserWithEmailAndPassword(auth, registerForm.email.value, registerForm.password.value); authModal.style.display = 'none'; } catch (error) { alert(`Erro ao criar conta: ${error.message}`); }});
-            googleLoginBtn.addEventListener('click', async () => { const provider = new GoogleAuthProvider(); try { await signInWithPopup(auth, provider); authModal.style.display = 'none'; } catch (error) { console.error("Erro no login com Google:", error); alert(`Erro ao fazer login com Google: ${error.message}`); }});
+            
+            registerForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const password = registerForm.password.value;
+                const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z]).{6,}$/;
+                if (!passwordRegex.test(password)) {
+                    alert("A senha deve ter no mínimo 6 caracteres, incluindo uma letra maiúscula e uma minúscula.");
+                    return;
+                }
+                if (password !== registerForm['confirm-password'].value) {
+                    alert("As senhas não coincidem!");
+                    return;
+                }
+                try {
+                    await createUserWithEmailAndPassword(auth, registerForm.email.value, password);
+                    authModal.style.display = 'none';
+                } catch (error) {
+                    alert(`Erro ao criar conta: ${error.message}`);
+                }
+            });
+            
             logoutButton.addEventListener('click', () => signOut(auth));
             shareCollectionBtn.addEventListener('click', async () => { if (!currentUserId) return; const profileRef = doc(db, 'public_profiles', currentUserId); const profileSnap = await getDoc(profileRef); updateShareUI(profileSnap.exists() && profileSnap.data().isPublic); shareModal.style.display = 'flex'; });
-            publicToggle.addEventListener('change', async () => { if (!currentUserId) return; const isPublic = publicToggle.checked; const profileRef = doc(db, 'public_profiles', currentUserId); try { await setDoc(profileRef, { isPublic: isPublic, ownerName: auth.currentUser.displayName || auth.currentUser.email }, { merge: true }); updateShareUI(isPublic); } catch (error) { console.error("Erro ao atualizar status público:", error); alert("Não foi possível atualizar o status da sua coleção."); }});
+            publicToggle.addEventListener('change', async () => { if (!currentUserId) return; const isPublic = publicToggle.checked; const profileRef = doc(db, 'public_profiles', currentUserId); try { const userProfileDoc = await getDoc(doc(db, "users", currentUserId)); const displayName = userProfileDoc.exists() ? userProfileDoc.data().displayName : auth.currentUser.email; await setDoc(profileRef, { isPublic: isPublic, ownerName: displayName || auth.currentUser.email }, { merge: true }); updateShareUI(isPublic); } catch (error) { console.error("Erro ao atualizar status público:", error); alert("Não foi possível atualizar o status da sua coleção."); }});
             copyLinkBtn.addEventListener('click', () => { if (!publicToggle.checked) return; shareableLink.select(); document.execCommand('copy'); copyFeedback.textContent = 'Link copiado!'; setTimeout(() => { copyFeedback.textContent = '' }, 2000); });
             shareModalCloseBtn.addEventListener('click', () => shareModal.style.display = 'none');
             
+            openProfileModalBtn.addEventListener('click', async () => {
+                profileFeedback.textContent = '';
+                profileForm.reset();
+                const userDocRef = doc(db, 'users', currentUserId);
+                const docSnap = await getDoc(userDocRef);
+                if (docSnap.exists()) {
+                    profileNameInput.value = docSnap.data().displayName || '';
+                }
+                profileModal.style.display = 'flex';
+            });
+            profileModalCloseBtn.addEventListener('click', () => profileModal.style.display = 'none');
+            profileForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const newDisplayName = profileNameInput.value.trim();
+                if (!newDisplayName) {
+                    alert("O nome/nick não pode estar vazio.");
+                    return;
+                }
+                const userDocRef = doc(db, 'users', currentUserId);
+                const publicProfileRef = doc(db, 'public_profiles', currentUserId);
+                try {
+                    await setDoc(userDocRef, { displayName: newDisplayName }, { merge: true });
+                    await setDoc(publicProfileRef, { ownerName: newDisplayName }, { merge: true }); // Atualiza o nome público também
+                    await updateProfile(auth.currentUser, { displayName: newDisplayName });
+                    
+                    userEmailDisplay.textContent = newDisplayName;
+                    profileFeedback.textContent = "Perfil salvo com sucesso!";
+                    profileFeedback.classList.remove('text-red-400');
+                    profileFeedback.classList.add('text-green-400');
+                    setTimeout(() => profileModal.style.display = 'none', 1500);
+                } catch (error) {
+                    console.error("Erro ao salvar perfil:", error);
+                    profileFeedback.textContent = "Erro ao salvar o perfil.";
+                    profileFeedback.classList.remove('text-green-400');
+                    profileFeedback.classList.add('text-red-400');
+                }
+            });
+
             try {
                 const firebaseConfig = {
                     apiKey: "AIzaSyDZTXYGAHje-ZFnnhoiNwEUkNAmq63tY68",
@@ -625,11 +690,17 @@
                 const app = initializeApp(firebaseConfig);
                 auth = getAuth(app);
                 db = getFirestore(app);
-                onAuthStateChanged(auth, user => {
+                onAuthStateChanged(auth, async user => {
                     if (collectionUnsubscribe) collectionUnsubscribe();
                     if (user) {
                         currentUserId = user.uid;
-                        userEmailDisplay.textContent = user.displayName || user.email;
+                        
+                        // Busca o nome do perfil no Firestore
+                        const userDocRef = doc(db, 'users', user.uid);
+                        const userDocSnap = await getDoc(userDocRef);
+                        const displayName = userDocSnap.exists() ? userDocSnap.data().displayName : user.displayName;
+
+                        userEmailDisplay.textContent = displayName || user.email;
                         loggedInHeader.classList.remove('hidden');
                         loggedOutHeader.classList.add('hidden');
                         shareCollectionBtn.classList.remove('hidden');
@@ -663,9 +734,12 @@
                     <p class="text-yellow-400 font-semibold mt-2 text-sm" style="font-family: 'Poppins', sans-serif;">Sua coleção Pokémon</p>
                 </div>
                 <div id="logged-in-header" class="hidden">
-                    <div class="text-right">
-                        <p id="user-email-display" class="text-sm text-gray-300" style="font-family: 'Poppins', sans-serif;"></p>
-                        <button id="logout-button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition-colors text-sm mt-1">Sair</button>
+                    <div class="flex items-center gap-4">
+                        <div class="text-right">
+                            <p id="user-email-display" class="text-sm text-gray-300" style="font-family: 'Poppins', sans-serif;"></p>
+                            <button id="logout-button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-3 rounded-lg transition-colors text-xs mt-1">Sair</button>
+                        </div>
+                        <button id="open-profile-modal-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors text-sm">Meu Perfil</button>
                     </div>
                 </div>
                 <div id="logged-out-header">
@@ -739,10 +813,14 @@
         <footer class="text-center p-6 mt-8 border-t border-gray-700 text-xs" style="font-family: 'Poppins', sans-serif;"><p class="text-sm text-gray-300">Criado com ❤️ por um Mestre Pokémon.</p><p class="text-gray-400 mt-2">Dados de cartas e imagens via <a href="https://pokemontcg.io/" target="_blank" rel="noopener noreferrer" class="underline hover:text-yellow-300">pokemontcg.io</a>.</p><p class="text-gray-500 mt-2">*Os valores em Reais (R$) são estimativas baseadas nos preços de mercado do TCGplayer (USD) e convertidos usando uma taxa de câmbio atualizada diariamente. Os valores servem apenas como referência.</p></footer>
     </div>
     
-    <div id="auth-modal" class="modal-overlay"><div class="modal-content" style="max-width: 450px;"><div class="flex justify-between items-center mb-6"><h2 class="text-xl">Acesso</h2><button id="auth-modal-close-btn" class="text-4xl font-bold text-gray-400 hover:text-white transition-colors">&times;</button></div><div class="space-y-4" style="font-family: 'Poppins', sans-serif;"><button id="google-login-btn" class="w-full flex items-center justify-center gap-3 bg-white text-gray-800 font-bold py-3 rounded-lg hover:bg-gray-200 transition-colors"><svg class="w-6 h-6" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.42-4.55H24v8.51h12.8c-.57 5.4-4.5 9.5-9.8 9.5-6.08 0-11-4.92-11-11s4.92-11 11-11c3.1 0 5.63 1.34 7.4 3.03l6.35-6.35C37.13 6.96 31.25 4 24 4 12.96 4 4.12 10.72 1.03 19.53l8.06 6.22C11.25 18.66 17.13 14 24 14c3.87 0 7.22 1.58 9.72 4.1l-6.85 6.85C25.43 24.52 24.78 24.55 24 24.55c-.78 0-1.43-.03-2.15-.09l-6.85 6.85C17.22 41.34 24 44 24 44c5.96 0 10.9-3.82 12.8-9.09L45.02 31.6C46.33 29.22 46.98 26.93 46.98 24.55z"></path><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24s.92 7.54 2.56 10.78l7.97-6.19z"></path><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path><path fill="none" d="M0 0h48v48H0z"></path></svg><span>Entrar com Google</span></button><div class="relative flex py-2 items-center"><div class="flex-grow border-t border-gray-600"></div><span class="flex-shrink mx-4 text-gray-400">ou</span><div class="flex-grow border-t border-gray-600"></div></div></div><div id="login-tab"><h3 class="text-lg text-center mb-4">Login com E-mail</h3><form id="login-form" class="space-y-4" style="font-family: 'Poppins', sans-serif;"><input class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2" name="email" type="email" placeholder="Email" required><input class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2" name="password" type="password" placeholder="Senha" required><button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg">Entrar</button></form><p class="text-center text-sm text-gray-400 mt-4">Não tem conta? <button id="show-register-btn" class="text-yellow-400 hover:underline">Crie uma.</button></p></div><div id="register-tab" class="hidden"><h3 class="text-lg text-center mb-4">Criar Conta</h3><form id="register-form" class="space-y-4" style="font-family: 'Poppins', sans-serif;"><input class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2" name="email" type="email" placeholder="Email" required><input class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2" name="password" type="password" placeholder="Senha (mín. 6 caracteres)" required><input class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2" name="confirm-password" type="password" placeholder="Confirmar Senha" required><button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg">Criar Conta</button></form><p class="text-center text-sm text-gray-400 mt-4">Já tem conta? <button id="show-login-btn" class="text-yellow-400 hover:underline">Faça login.</button></p></div></div></div>
+    <div id="auth-modal" class="modal-overlay"><div class="modal-content" style="max-width: 450px;"><div class="flex justify-between items-center mb-6"><h2 class="text-xl">Acesso</h2><button id="auth-modal-close-btn" class="text-4xl font-bold text-gray-400 hover:text-white transition-colors">&times;</button></div><div id="login-tab"><h3 class="text-lg text-center mb-4">Login com E-mail</h3><form id="login-form" class="space-y-4" style="font-family: 'Poppins', sans-serif;"><input class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2" name="email" type="email" placeholder="Email" required><input class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2" name="password" type="password" placeholder="Senha" required><button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg">Entrar</button></form><p class="text-center text-sm text-gray-400 mt-4">Não tem conta? <button id="show-register-btn" class="text-yellow-400 hover:underline">Crie uma.</button></p></div><div id="register-tab" class="hidden"><h3 class="text-lg text-center mb-4">Criar Conta</h3><form id="register-form" class="space-y-4" style="font-family: 'Poppins', sans-serif;"><input class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2" name="email" type="email" placeholder="Email" required><input class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2" name="password" type="password" placeholder="Senha" required><p class="text-xs text-gray-400 -mt-2 pl-1">Mínimo 6 caracteres, com uma letra maiúscula e uma minúscula.</p><input class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2" name="confirm-password" type="password" placeholder="Confirmar Senha" required><button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg">Criar Conta</button></form><p class="text-center text-sm text-gray-400 mt-4">Já tem conta? <button id="show-login-btn" class="text-yellow-400 hover:underline">Faça login.</button></p></div></div></div>
     <div id="add-card-modal" class="modal-overlay"><div class="modal-content" style="max-width: 450px;"><div class="flex justify-between items-center mb-6"><h2 class="text-xl">Adicionar à Coleção</h2><button id="add-card-modal-close-btn" class="text-4xl font-bold text-gray-400 hover:text-white transition-colors">&times;</button></div><div class="flex flex-col sm:flex-row gap-4"><img id="modal-card-image" src="" alt="Imagem da carta" class="w-full sm:w-1/3 rounded-lg"><form id="add-card-form" class="flex-grow flex flex-col" style="font-family: 'Poppins', sans-serif;"><h3 id="modal-card-name" class="text-xl font-bold"></h3><div id="modal-card-set-info" class="text-sm text-gray-400 mb-4"></div><div class="mb-4"><label for="quality" class="block mb-2 font-semibold">Qualidade:</label><select name="quality" id="quality" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2"><option value="Nova">Nova (Mint/NM)</option><option value="Pouco Usada">Pouco Usada (LP)</option><option value="Usada">Usada (Played)</option></select></div><div class="mb-4"><label for="finish" class="block mb-2 font-semibold">Acabamento:</label><select name="finish" id="finish" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2"></select></div><p id="modal-price-display" class="text-lg font-bold text-yellow-400 mb-6">Valor: R$ 0,00</p><button type="submit" class="mt-auto w-full bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold py-3 px-4 rounded-lg transition-colors">Confirmar</button></form></div></div></div>
+    
     <div id="details-modal" class="modal-overlay"><div class="modal-content"><div class="flex justify-between items-center mb-6"><h2 class="text-2xl">Detalhes da Carta</h2><button id="details-modal-close-btn" class="text-4xl font-bold text-gray-400 hover:text-white transition-colors">&times;</button></div><div class="flex flex-col sm:flex-row gap-6"><img id="details-card-image" src="" alt="Imagem da carta" class="w-full sm:w-1/3 rounded-lg"><div class="flex-grow" style="font-family: 'Poppins', sans-serif;"><h3 id="details-card-name" class="text-2xl font-bold mb-2"></h3><div id="details-card-set-info" class="mb-4"></div><div class="mb-4"><p class="font-semibold">Qualidade:</p><p id="details-card-quality" class="text-lg text-blue-300"></p></div><div class="mb-4"><p class="font-semibold">Acabamento:</p><p id="details-card-finish" class="text-lg text-cyan-300"></p></div><div><p class="font-semibold">Valor Registado:</p><p id="details-card-price" class="text-lg font-bold text-yellow-400"></p><p class="text-xs text-gray-400 mt-2 italic">*Valor em R$ é uma estimativa baseada na cotação do dólar e preços do TCGplayer (EUA).</p></div></div></div></div></div>
-    <div id="share-modal" class="modal-overlay"><div class="modal-content" style="max-width: 500px; font-family: 'Poppins', sans-serif;"><div class="flex justify-between items-center mb-4"><h2 class="text-xl" style="font-family: 'Press Start 2P', cursive;">Compartilhar Coleção</h2><button id="share-modal-close-btn" class="text-4xl font-bold text-gray-400 hover:text-white">&times;</button></div><p class="text-gray-400 mb-6">Use o link abaixo para compartilhar uma visão pública da sua coleção com outros treinadores!</p><div class="mb-6"><label for="public-toggle" class="flex items-center cursor-pointer"><div class="relative"><input type="checkbox" id="public-toggle" class="sr-only"><div class="block bg-gray-600 w-14 h-8 rounded-full"></div><div class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition"></div></div><div id="public-status-text" class="ml-3 text-white font-medium">Minha coleção é Privada</div></label></div><div><label for="shareable-link" class="block text-sm font-medium text-gray-300 mb-1">Seu link público:</label><div class="flex"><input type="text" id="shareable-link" readonly class="w-full bg-gray-800 border border-gray-600 rounded-l-lg px-3 py-2 text-gray-400"><button id="copy-link-btn" class="bg-yellow-500 text-gray-900 font-bold px-4 rounded-r-lg hover:bg-yellow-600">Copiar</button></div><p id="copy-feedback" class="text-green-400 text-sm mt-2 h-4"></p></div></div></div>
+    
+    <div id="profile-modal" class="modal-overlay"><div class="modal-content" style="max-width: 500px;"><div class="flex justify-between items-center mb-6"><h2 class="text-xl">Gerenciar Perfil</h2><button id="profile-modal-close-btn" class="text-4xl font-bold text-gray-400 hover:text-white">&times;</button></div><form id="profile-form" style="font-family: 'Poppins', sans-serif;"><div class="mb-4"><label for="profile-name" class="block font-semibold mb-1">Nome / Nickname</label><input type="text" id="profile-name" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2" required></div><button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg">Salvar Alterações</button><p id="profile-feedback" class="text-center mt-4 h-5"></p></form></div></div>
+    
+    <div id="share-modal" class="modal-overlay"><div class="modal-content" style="max-width: 500px; font-family: 'Poppins', sans-serif;"><div class="flex justify-between items-center mb-4"><h2 class="text-xl" style="font-family: 'Press Start 2P', cursive;">Compartilhar Coleção</h2><button id="share-modal-close-btn" class="text-4xl font-bold text-gray-400 hover:text-white">&times;</button></div><p class="text-gray-400 mb-6">Use o link abaixo para compartilhar uma visão pública da sua coleção com outros treinadores!</p><div class="mb-6"><label for="public-toggle" class="flex items-center cursor-pointer"><div class="relative"><input type="checkbox" id="public-toggle" class="sr-only"><div class="block bg-gray-600 w-14 h-8 rounded-full"></div><div class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition" style="transform: translateX(0); background-color: white;"></div></div><div id="public-status-text" class="ml-3 text-white font-medium">Minha coleção é Privada</div></label></div><div><label for="shareable-link" class="block text-sm font-medium text-gray-300 mb-1">Seu link público:</label><div class="flex"><input type="text" id="shareable-link" readonly class="w-full bg-gray-800 border border-gray-600 rounded-l-lg px-3 py-2 text-gray-400"><button id="copy-link-btn" class="bg-yellow-500 text-gray-900 font-bold px-4 rounded-r-lg hover:bg-yellow-600">Copiar</button></div><p id="copy-feedback" class="text-green-400 text-sm mt-2 h-4"></p></div></div></div>
 
 </body>
 </html>
