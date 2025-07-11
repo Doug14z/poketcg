@@ -143,11 +143,17 @@
             let usdToBrlRate = 5.3;
             let db, auth;
 
+            // ++ CORREÇÃO DA FUNÇÃO PARA GARANTIR QUE A PÁGINA SEJA EXIBIDA ++
             const showView = (viewId) => {
-                const appView = document.getElementById('app-view');
-                if(appView) appView.classList.add('hidden');
+                // Esconde todas as possíveis "telas" principais
+                document.querySelectorAll('.main-view').forEach(view => {
+                    view.classList.add('hidden');
+                });
+                // Mostra apenas a tela solicitada
                 const viewToShow = document.getElementById(viewId);
-                if(viewToShow) viewToShow.classList.remove('hidden');
+                if(viewToShow) {
+                    viewToShow.classList.remove('hidden');
+                }
             };
 
             const getFinishDisplayName = (key) => {
@@ -626,7 +632,11 @@
                     return;
                 }
                 try {
-                    await createUserWithEmailAndPassword(auth, registerForm.email.value, password);
+                    const userCredential = await createUserWithEmailAndPassword(auth, registerForm.email.value, password);
+                    const user = userCredential.user;
+                    // Salva um perfil inicial com o e-mail como displayName
+                    const userDocRef = doc(db, 'users', user.uid);
+                    await setDoc(userDocRef, { displayName: user.email }, { merge: true });
                     authModal.style.display = 'none';
                 } catch (error) {
                     alert(`Erro ao criar conta: ${error.message}`);
@@ -635,7 +645,7 @@
             
             logoutButton.addEventListener('click', () => signOut(auth));
             shareCollectionBtn.addEventListener('click', async () => { if (!currentUserId) return; const profileRef = doc(db, 'public_profiles', currentUserId); const profileSnap = await getDoc(profileRef); updateShareUI(profileSnap.exists() && profileSnap.data().isPublic); shareModal.style.display = 'flex'; });
-            publicToggle.addEventListener('change', async () => { if (!currentUserId) return; const isPublic = publicToggle.checked; const profileRef = doc(db, 'public_profiles', currentUserId); try { const userProfileDoc = await getDoc(doc(db, "users", currentUserId)); const displayName = userProfileDoc.exists() ? userProfileDoc.data().displayName : auth.currentUser.email; await setDoc(profileRef, { isPublic: isPublic, ownerName: displayName || auth.currentUser.email }, { merge: true }); updateShareUI(isPublic); } catch (error) { console.error("Erro ao atualizar status público:", error); alert("Não foi possível atualizar o status da sua coleção."); }});
+            publicToggle.addEventListener('change', async () => { if (!currentUserId) return; const isPublic = publicToggle.checked; const profileRef = doc(db, 'public_profiles', currentUserId); try { const userProfileDoc = await getDoc(doc(db, "users", currentUserId)); const displayName = userProfileDoc.exists() && userProfileDoc.data().displayName ? userProfileDoc.data().displayName : auth.currentUser.email; await setDoc(profileRef, { isPublic: isPublic, ownerName: displayName }, { merge: true }); updateShareUI(isPublic); } catch (error) { console.error("Erro ao atualizar status público:", error); alert("Não foi possível atualizar o status da sua coleção."); }});
             copyLinkBtn.addEventListener('click', () => { if (!publicToggle.checked) return; shareableLink.select(); document.execCommand('copy'); copyFeedback.textContent = 'Link copiado!'; setTimeout(() => { copyFeedback.textContent = '' }, 2000); });
             shareModalCloseBtn.addEventListener('click', () => shareModal.style.display = 'none');
             
@@ -644,8 +654,10 @@
                 profileForm.reset();
                 const userDocRef = doc(db, 'users', currentUserId);
                 const docSnap = await getDoc(userDocRef);
-                if (docSnap.exists()) {
-                    profileNameInput.value = docSnap.data().displayName || '';
+                if (docSnap.exists() && docSnap.data().displayName) {
+                    profileNameInput.value = docSnap.data().displayName;
+                } else {
+                    profileNameInput.value = auth.currentUser.displayName || auth.currentUser.email;
                 }
                 profileModal.style.display = 'flex';
             });
@@ -661,8 +673,15 @@
                 const publicProfileRef = doc(db, 'public_profiles', currentUserId);
                 try {
                     await setDoc(userDocRef, { displayName: newDisplayName }, { merge: true });
-                    await setDoc(publicProfileRef, { ownerName: newDisplayName }, { merge: true }); // Atualiza o nome público também
-                    await updateProfile(auth.currentUser, { displayName: newDisplayName });
+                    
+                    const publicProfileSnap = await getDoc(publicProfileRef);
+                    if (publicProfileSnap.exists() && publicProfileSnap.data().isPublic) {
+                       await setDoc(publicProfileRef, { ownerName: newDisplayName }, { merge: true });
+                    }
+                    
+                    if (auth.currentUser.displayName !== newDisplayName) {
+                      await updateProfile(auth.currentUser, { displayName: newDisplayName });
+                    }
                     
                     userEmailDisplay.textContent = newDisplayName;
                     profileFeedback.textContent = "Perfil salvo com sucesso!";
@@ -695,12 +714,11 @@
                     if (user) {
                         currentUserId = user.uid;
                         
-                        // Busca o nome do perfil no Firestore
                         const userDocRef = doc(db, 'users', user.uid);
                         const userDocSnap = await getDoc(userDocRef);
-                        const displayName = userDocSnap.exists() ? userDocSnap.data().displayName : user.displayName;
+                        const displayName = userDocSnap.exists() && userDocSnap.data().displayName ? userDocSnap.data().displayName : user.email;
 
-                        userEmailDisplay.textContent = displayName || user.email;
+                        userEmailDisplay.textContent = displayName;
                         loggedInHeader.classList.remove('hidden');
                         loggedOutHeader.classList.add('hidden');
                         shareCollectionBtn.classList.remove('hidden');
@@ -726,7 +744,7 @@
         });
     </script>
     
-    <div id="app-view" class="hidden">
+    <div id="app-view" class="hidden main-view">
         <div class="container mx-auto p-4 md:p-8">
             <header class="flex justify-between items-center mb-8 flex-wrap gap-4">
                 <div>
