@@ -107,6 +107,18 @@
             let usdToBrlRate = 5.3;
             let db, auth;
 
+            const getFinishDisplayName = (key) => {
+                const names = {
+                    normal: 'Normal',
+                    holofoil: 'Holo',
+                    reverseHolofoil: 'Reverse Holo',
+                    '1stEditionHolofoil': '1ª Edição Holo',
+                    '1stEditionNormal': '1ª Edição Normal',
+                    unlimitedHolofoil: 'Unlimited Holo'
+                };
+                return names[key] || key;
+            };
+
             const showView = (viewId) => {
                 const loadingView = document.getElementById('loading-view');
                 const authView = document.getElementById('auth-view');
@@ -202,10 +214,31 @@
                 const modalCardImage = document.getElementById('modal-card-image');
                 const modalCardName = document.getElementById('modal-card-name');
                 const modalCardSetInfo = document.getElementById('modal-card-set-info');
+                const finishSelect = document.getElementById('finish');
+
                 modalCardImage.src = card.images.small;
                 modalCardName.textContent = card.name;
                 const releaseYear = new Date(card.set.releaseDate).getFullYear();
                 modalCardSetInfo.innerHTML = `<span class="flex items-center gap-2">${card.set.name} <img src="${card.set.images.symbol}" class="h-5" alt="${card.set.name}"></span> ${releaseYear} &bull; #${card.number} / ${card.set.printedTotal}`;
+                
+                // Popula dinamicamente as opções de acabamento (Foil, etc)
+                finishSelect.innerHTML = '';
+                if (card.tcgplayer && card.tcgplayer.prices) {
+                    for (const key in card.tcgplayer.prices) {
+                        if (card.tcgplayer.prices[key]) { // Garante que o tipo de preço existe
+                            const option = document.createElement('option');
+                            option.value = key;
+                            option.textContent = getFinishDisplayName(key);
+                            finishSelect.appendChild(option);
+                        }
+                    }
+                } else {
+                     const option = document.createElement('option');
+                     option.value = 'normal';
+                     option.textContent = 'Normal';
+                     finishSelect.appendChild(option);
+                }
+
                 addCardForm.dataset.cardId = card.id;
                 addCardForm.reset();
                 updatePriceDisplay();
@@ -217,9 +250,11 @@
                 const cardId = addCardForm.dataset.cardId;
                 const card = searchCache.get(cardId);
                 const quality = addCardForm.quality.value;
+                const finish = addCardForm.finish.value;
                 let priceUsd = 0;
-                if (card.tcgplayer && card.tcgplayer.prices) {
-                    const prices = card.tcgplayer.prices.holofoil || card.tcgplayer.prices.reverseHolofoil || card.tcgplayer.prices.normal || Object.values(card.tcgplayer.prices)[0];
+
+                if (card.tcgplayer && card.tcgplayer.prices && card.tcgplayer.prices[finish]) {
+                    const prices = card.tcgplayer.prices[finish];
                     if (prices) {
                         switch (quality) {
                             case 'Nova': priceUsd = prices.market || prices.mid || 0; break;
@@ -228,6 +263,7 @@
                         }
                     }
                 }
+
                 const priceBrl = priceUsd * usdToBrlRate;
                 modalPriceDisplay.textContent = `Valor estimado: R$ ${priceBrl.toFixed(2)}`;
                 addCardForm.dataset.currentPrice = priceBrl.toFixed(2);
@@ -238,7 +274,10 @@
                 const cardId = addCardForm.dataset.cardId;
                 const card = searchCache.get(cardId);
                 const quality = addCardForm.quality.value;
+                const finishKey = addCardForm.finish.value;
+                const finishText = getFinishDisplayName(finishKey);
                 const price = parseFloat(addCardForm.dataset.currentPrice);
+
                 const cardData = { 
                     id: card.id, 
                     name: card.name, 
@@ -257,6 +296,7 @@
                     }, 
                     number: card.number, 
                     quality: quality, 
+                    finish: finishText, // Salva o acabamento
                     acquiredPrice: price, 
                     pokedexNumber: card.nationalPokedexNumbers ? card.nationalPokedexNumbers[0] : null 
                 };
@@ -271,19 +311,22 @@
                 const detailsCardName = document.getElementById('details-card-name');
                 const detailsCardSetInfo = document.getElementById('details-card-set-info');
                 const detailsCardQuality = document.getElementById('details-card-quality');
+                const detailsCardFinish = document.getElementById('details-card-finish');
                 const detailsCardPrice = document.getElementById('details-card-price');
                 detailsCardImage.src = card.image;
                 detailsCardName.textContent = card.name;
                 const releaseYear = new Date(card.set.releaseDate).getFullYear();
                 detailsCardSetInfo.innerHTML = `<span class="flex items-center gap-2 text-lg">${card.set.name} <img src="${card.set.images.symbol}" class="h-6" alt="${card.set.name}"></span> <span class="text-sm text-gray-400">${releaseYear} &bull; #${card.number} / ${card.set.printedTotal}</span>`;
                 detailsCardQuality.textContent = card.quality;
+                detailsCardFinish.textContent = card.finish;
                 detailsCardPrice.textContent = `R$ ${card.acquiredPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                 detailsModal.style.display = 'flex';
             };
 
             const addCardToCollection = async (cardData) => {
                 if (!currentUserId) return;
-                const docId = `${cardData.id}-${cardData.quality}`;
+                // ID do documento agora inclui o acabamento para garantir a exclusividade
+                const docId = `${cardData.id}-${cardData.quality}-${cardData.finish}`;
                 const cardRef = doc(db, `users/${currentUserId}/tcg-collection`, docId);
                 const docSnap = await getDoc(cardRef);
                 if (docSnap.exists()) {
@@ -364,7 +407,6 @@
                         groupHeader.className = 'group-header text-base';
                         groupHeader.textContent = groupName;
                         container.appendChild(groupHeader);
-                        // CORREÇÃO APLICADA AQUI: Ordenação robusta para números de cartas
                         grouped[groupName].sort((a, b) => {
                             const numA = parseInt(String(a.number).replace(/[^0-9]/g, ''), 10) || 0;
                             const numB = parseInt(String(b.number).replace(/[^0-9]/g, ''), 10) || 0;
@@ -395,7 +437,10 @@
                         ${pokedexInfo}
                         <p class="font-bold text-sm">${card.name}</p>
                         ${setInfoHTML}
-                        <div class="text-xs font-semibold my-1 px-2 py-0.5 rounded-full ${qualityClass}">${card.quality}</div>
+                        <div class="flex flex-wrap items-center justify-center gap-1 my-1">
+                           <div class="text-xs font-semibold px-2 py-0.5 rounded-full ${qualityClass}">${card.quality}</div>
+                           <div class="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-600 text-white">${card.finish}</div>
+                        </div>
                         <p class="text-sm text-yellow-400 font-bold mb-2">R$ ${card.acquiredPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                     </div>
                     <div class="flex items-center gap-2 mt-4">
@@ -418,7 +463,7 @@
                     collectionData.clear();
                     snapshot.docs.forEach(doc => collectionData.set(doc.id, { ...doc.data(), docId: doc.id }));
                     renderCollection();
-                }, (error) => { // Adicionando tratamento de erro para o snapshot
+                }, (error) => {
                     console.error("Erro ao carregar a coleção:", error);
                     myCollectionContainer.innerHTML = `<p class="text-center text-red-400">Ocorreu um erro ao carregar sua coleção.</p>`;
                     collectionLoader.classList.add('hidden');
@@ -486,6 +531,7 @@
             searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') searchCards(); });
             addCardForm.addEventListener('submit', handleAddFormSubmit);
             addCardForm.quality.addEventListener('change', updatePriceDisplay);
+            addCardForm.finish.addEventListener('change', updatePriceDisplay);
             addCardModalCloseBtn.addEventListener('click', () => addCardModal.style.display = 'none');
             detailsModalCloseBtn.addEventListener('click', () => detailsModal.style.display = 'none');
             myCollectionContainer.addEventListener('click', handleCollectionClick);
@@ -639,7 +685,8 @@
     </div>
     
     <div id="auth-modal" class="modal-overlay"><div class="modal-content" style="max-width: 450px;"><div class="flex justify-between items-center mb-6"><h2 class="text-xl">Acesso</h2><button id="auth-modal-close-btn" class="text-4xl font-bold text-gray-400 hover:text-white transition-colors">&times;</button></div><div class="space-y-4" style="font-family: 'Poppins', sans-serif;"><button id="google-login-btn" class="w-full flex items-center justify-center gap-3 bg-white text-gray-800 font-bold py-3 rounded-lg hover:bg-gray-200 transition-colors"><svg class="w-6 h-6" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.42-4.55H24v8.51h12.8c-.57 5.4-4.5 9.5-9.8 9.5-6.08 0-11-4.92-11-11s4.92-11 11-11c3.1 0 5.63 1.34 7.4 3.03l6.35-6.35C37.13 6.96 31.25 4 24 4 12.96 4 4.12 10.72 1.03 19.53l8.06 6.22C11.25 18.66 17.13 14 24 14c3.87 0 7.22 1.58 9.72 4.1l-6.85 6.85C25.43 24.52 24.78 24.55 24 24.55c-.78 0-1.43-.03-2.15-.09l-6.85 6.85C17.22 41.34 24 44 24 44c5.96 0 10.9-3.82 12.8-9.09L45.02 31.6C46.33 29.22 46.98 26.93 46.98 24.55z"></path><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24s.92 7.54 2.56 10.78l7.97-6.19z"></path><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path><path fill="none" d="M0 0h48v48H0z"></path></svg><span>Entrar com Google</span></button><div class="relative flex py-2 items-center"><div class="flex-grow border-t border-gray-600"></div><span class="flex-shrink mx-4 text-gray-400">ou</span><div class="flex-grow border-t border-gray-600"></div></div></div><div id="login-tab"><h3 class="text-lg text-center mb-4">Login com E-mail</h3><form id="login-form" class="space-y-4" style="font-family: 'Poppins', sans-serif;"><input class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2" name="email" type="email" placeholder="Email" required><input class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2" name="password" type="password" placeholder="Senha" required><button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg">Entrar</button></form><p class="text-center text-sm text-gray-400 mt-4">Não tem conta? <button id="show-register-btn" class="text-yellow-400 hover:underline">Crie uma.</button></p></div><div id="register-tab" class="hidden"><h3 class="text-lg text-center mb-4">Criar Conta</h3><form id="register-form" class="space-y-4" style="font-family: 'Poppins', sans-serif;"><input class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2" name="email" type="email" placeholder="Email" required><input class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2" name="password" type="password" placeholder="Senha (mín. 6 caracteres)" required><input class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2" name="confirm-password" type="password" placeholder="Confirmar Senha" required><button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg">Criar Conta</button></form><p class="text-center text-sm text-gray-400 mt-4">Já tem conta? <button id="show-login-btn" class="text-yellow-400 hover:underline">Faça login.</button></p></div></div></div>
-    <div id="add-card-modal" class="modal-overlay"><div class="modal-content" style="max-width: 450px;"><div class="flex justify-between items-center mb-6"><h2 class="text-xl">Adicionar à Coleção</h2><button id="add-card-modal-close-btn" class="text-4xl font-bold text-gray-400 hover:text-white transition-colors">&times;</button></div><div class="flex flex-col sm:flex-row gap-4"><img id="modal-card-image" src="" alt="Imagem da carta" class="w-full sm:w-1/3 rounded-lg"><form id="add-card-form" class="flex-grow flex flex-col" style="font-family: 'Poppins', sans-serif;"><h3 id="modal-card-name" class="text-xl font-bold"></h3><div id="modal-card-set-info" class="text-sm text-gray-400 mb-4"></div><div class="mb-4"><label for="quality" class="block mb-2 font-semibold">Qualidade:</label><select name="quality" id="quality" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2"><option value="Nova">Nova (Mint/NM)</option><option value="Pouco Usada">Pouco Usada (LP)</option><option value="Usada">Usada (Played)</option></select></div><p id="modal-price-display" class="text-lg font-bold text-yellow-400 mb-6">Valor: R$ 0,00</p><button type="submit" class="mt-auto w-full bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold py-3 px-4 rounded-lg transition-colors">Confirmar</button></form></div></div></div>
+    
+    <div id="add-card-modal" class="modal-overlay"><div class="modal-content" style="max-width: 450px;"><div class="flex justify-between items-center mb-6"><h2 class="text-xl">Adicionar à Coleção</h2><button id="add-card-modal-close-btn" class="text-4xl font-bold text-gray-400 hover:text-white transition-colors">&times;</button></div><div class="flex flex-col sm:flex-row gap-4"><img id="modal-card-image" src="" alt="Imagem da carta" class="w-full sm:w-1/3 rounded-lg"><form id="add-card-form" class="flex-grow flex flex-col" style="font-family: 'Poppins', sans-serif;"><h3 id="modal-card-name" class="text-xl font-bold"></h3><div id="modal-card-set-info" class="text-sm text-gray-400 mb-4"></div><div class="mb-4"><label for="quality" class="block mb-2 font-semibold">Qualidade:</label><select name="quality" id="quality" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2"><option value="Nova">Nova (Mint/NM)</option><option value="Pouco Usada">Pouco Usada (LP)</option><option value="Usada">Usada (Played)</option></select></div><div class="mb-4"><label for="finish" class="block mb-2 font-semibold">Acabamento:</label><select name="finish" id="finish" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2"></select></div><p id="modal-price-display" class="text-lg font-bold text-yellow-400 mb-6">Valor: R$ 0,00</p><button type="submit" class="mt-auto w-full bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold py-3 px-4 rounded-lg transition-colors">Confirmar</button></form></div></div></div>
     
     <div id="details-modal" class="modal-overlay">
         <div class="modal-content">
@@ -655,6 +702,10 @@
                     <div class="mb-4">
                         <p class="font-semibold">Qualidade:</p>
                         <p id="details-card-quality" class="text-lg text-blue-300"></p>
+                    </div>
+                    <div class="mb-4">
+                        <p class="font-semibold">Acabamento:</p>
+                        <p id="details-card-finish" class="text-lg text-cyan-300"></p>
                     </div>
                     <div>
                         <p class="font-semibold">Valor Registado:</p>
