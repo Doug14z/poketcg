@@ -207,7 +207,7 @@
             function createSetShowcaseElement(cardsInGroup) {
                 const set = cardsInGroup[0].set;
                 const uniqueOwnedIds = new Set(cardsInGroup.map(c => c.id));
-                const imageUrl = set.images.logo || set.images.symbol; // Fallback para símbolo se a logo não existir
+                const imageUrl = set.images.logo || set.images.symbol;
                 
                 const showcaseElement = document.createElement('div');
                 showcaseElement.className = 'set-showcase';
@@ -224,7 +224,8 @@
                 backToSetsBtn.classList.remove('hidden');
 
                 try {
-                    const setResponse = await fetch(`https://api.pokemontcg.io/v2/cards?q=set.id:${setId}&orderBy=number&pageSize=250`);
+                    // ++ CORREÇÃO APLICADA AQUI: Adicionadas aspas ao redor do setId ++
+                    const setResponse = await fetch(`https://api.pokemontcg.io/v2/cards?q=set.id:"${setId}"&orderBy=number&pageSize=250`);
                     if (!setResponse.ok) throw new Error(`API error: ${setResponse.status}`);
                     const setData = await setResponse.json();
                     const fullSetCards = setData.data;
@@ -254,11 +255,13 @@
 
                 } catch (err) {
                     console.error("Erro ao carregar dados da edição:", err);
-                    collectionContainer.innerHTML = `<p class="col-span-full text-red-400">Erro ao carregar os dados completos desta edição.</p>`;
+                    collectionContainer.innerHTML = `<p class="col-span-full text-red-400 text-center">Erro ao carregar os dados completos desta edição.</p>`;
                 }
             }
             
             function createSetHeader(ownedCardMap, fullSetCards) {
+                if (!fullSetCards || fullSetCards.length === 0) return document.createElement('div');
+
                 const set = fullSetCards[0].set;
                 const uniqueOwnedCount = ownedCardMap.size;
                 const setTotal = set.printedTotal;
