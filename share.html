@@ -78,7 +78,7 @@
         <main>
              <div id="stats-container" class="my-4 text-center hidden" style="font-family: 'Poppins', sans-serif;">
                 <p class="font-semibold text-lg">Valor Estimado da Coleção: <span id="total-value" class="text-yellow-400">R$ 0,00</span></p>
-                <p class="text-xs text-gray-500 mt-1">*Valor aproximado baseado nos preços registrados no momento da aquisição.</p>
+                <p class="text-xs text-gray-500 mt-1">*Valor estimado em Reais (R$) baseado nos preços de mercado em Dólar (USD) do TCGplayer.</p>
                 
                 <div id="overall-progress-section" class="mt-6 max-w-lg mx-auto">
                     <h3 class="text-lg font-bold mb-2 text-center">Progresso da Pokédex Nacional</h3>
@@ -170,11 +170,10 @@
                 
                 publicCollectionData = collectionSnapshot.docs.map(doc => ({ ...doc.data(), docId: doc.id }));
                 
-                // Calcular e exibir estatísticas
                 calculateAndDisplayStats();
                 
                 renderPublicCollection();
-                controlsContainer.classList.add('flex'); // usa flex para alinhar
+                controlsContainer.classList.remove('hidden');
                 loader.classList.add('hidden');
 
             } catch (error) {
@@ -183,13 +182,11 @@
             }
             
             function calculateAndDisplayStats() {
-                const TOTAL_POKEMON = 1025; // Total de Pokémon até a 9ª Geração
+                const TOTAL_POKEMON = 1025;
                 
-                // Valor total
                 const totalValue = publicCollectionData.reduce((sum, card) => sum + (card.acquiredPrice || 0) * card.quantity, 0);
                 totalValueEl.textContent = `R$ ${totalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-                // Progresso da Pokédex
                 const ownedPokedexNumbers = new Set();
                 publicCollectionData.forEach(card => {
                     if (card.pokedexNumber) ownedPokedexNumbers.add(card.pokedexNumber);
@@ -262,7 +259,11 @@
                         headerWrapper.appendChild(progressBarContainer);
                         collectionContainer.appendChild(headerWrapper);
 
-                        cardsInGroup.sort((a,b) => (parseInt(a.number) || 0) - (parseInt(b.number) || 0)).forEach(card => collectionContainer.appendChild(createCardElement(card, groupBy)));
+                        cardsInGroup.sort((a,b) => {
+                            const numA = parseInt(String(a.number).replace(/[^0-9]/g, ''), 10) || 0;
+                            const numB = parseInt(String(b.number).replace(/[^0-9]/g, ''), 10) || 0;
+                            return numA - numB;
+                        }).forEach(card => collectionContainer.appendChild(createCardElement(card, groupBy)));
                     }
                 }
             }
