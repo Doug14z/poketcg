@@ -93,8 +93,8 @@
                 <div>
                     <label for="group-by-select" class="text-sm font-semibold mr-2">Organizar por:</label>
                     <select id="group-by-select" class="bg-gray-700 border border-gray-600 rounded-lg px-3 py-1 text-sm">
-                        <option value="edition" selected>Edição</option>
-                        <option value="pokedex">Pokédex</option>
+                        <option value="pokedex" selected>Pokédex</option>
+                        <option value="edition">Edição</option>
                         <option value="value">Valor</option>
                     </select>
                 </div>
@@ -102,7 +102,7 @@
 
             <div id="loader" class="loader mx-auto"></div>
             <div id="error-message" class="hidden text-center text-red-400"></div>
-            <div id="public-collection" class="flex flex-col gap-4"></div>
+            <div id="public-collection" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4"></div>
         </main>
         
         <footer class="text-center p-6 mt-8 border-t border-gray-700 text-xs" style="font-family: 'Poppins', sans-serif;">
@@ -202,14 +202,14 @@
                 collectionContainer.innerHTML = '';
                 const groupBy = groupBySelect.value;
                 const allCards = [...publicCollectionData];
-                collectionContainer.className = 'flex flex-col gap-4';
-
+                
                 if (groupBy === 'pokedex' || groupBy === 'value') {
                     collectionContainer.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4';
                     if (groupBy === 'pokedex') allCards.sort((a, b) => (a.pokedexNumber || 9999) - (b.pokedexNumber || 9999));
                     else allCards.sort((a, b) => (b.acquiredPrice || 0) - (a.acquiredPrice || 0));
                     allCards.forEach(card => collectionContainer.appendChild(createCardElement(card, groupBy)));
                 } else { // edition
+                    collectionContainer.className = 'flex flex-col gap-4';
                     const grouped = {};
                     allCards.forEach(card => {
                         const key = card.set.id;
@@ -255,7 +255,7 @@
                         loadButton.dataset.setId = groupKey;
                         
                         loadButton.addEventListener('click', async (e) => {
-                            const btn = e.target;
+                            const btn = e.currentTarget;
                             const setId = btn.dataset.setId;
                             const grid = btn.nextElementSibling;
                             btn.textContent = 'Carregando...';
@@ -263,6 +263,7 @@
 
                             try {
                                 const setResponse = await fetch(`https://api.pokemontcg.io/v2/cards?q=set.id:${setId}&orderBy=number&pageSize=250`);
+                                if (!setResponse.ok) throw new Error(`API returned status ${setResponse.status}`);
                                 const setData = await setResponse.json();
                                 const fullSetCards = setData.data;
                                 
@@ -278,15 +279,15 @@
                                         grid.appendChild(createMissingCardElement(apiCard));
                                     }
                                 });
-                                btn.remove(); // Remove o botão após carregar
+                                btn.remove();
 
                             } catch (err) {
                                 console.error("Erro ao carregar dados da edição:", err);
-                                grid.innerHTML = `<p class="col-span-full text-red-400">Erro ao carregar os dados desta edição.</p>`;
+                                grid.innerHTML = `<p class="col-span-full text-red-400">Erro ao carregar os dados completos desta edição.</p>`;
                                 btn.textContent = 'Tentar Novamente';
                                 btn.disabled = false;
                             }
-                        });
+                        }, { once: true });
 
                         progressBarContainer.appendChild(progressBarFill);
                         progressBarContainer.appendChild(progressBarText);
@@ -336,11 +337,12 @@
             }
             
             function createMissingCardElement(apiCard) {
-                const cardBackUrl = 'https://i.imgur.com/5lYagB3.png'; // URL do verso da carta
+                const cardBackUrl = 'https://i.imgur.com/5lYagB3.png';
                 const element = document.createElement('div');
                 element.className = "bg-gray-900/50 p-3 rounded-lg flex flex-col items-center text-center opacity-60";
                 
                 element.innerHTML = `
+                    <p class="font-bold text-lg invisible">#000</p>
                     <img src="${cardBackUrl}" alt="Verso da carta" class="rounded w-full mb-2" title="${apiCard.name} (Faltando)">
                     <p class="font-bold text-sm text-gray-400">${apiCard.name}</p>
                     <div class="text-xs text-gray-500 flex items-center justify-center gap-1.5 mt-1"><span>#${apiCard.number}</span></div>
