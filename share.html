@@ -16,7 +16,7 @@
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
         .card-image-zoom { transition: transform 0.2s ease-in-out; }
-        .card-image-zoom:hover { transform: scale(1.1); z-index: 50; }
+        .collection-card:hover .card-image-zoom { transform: scale(1.1); z-index: 50; }
         
         .group-header-wrapper {
             grid-column: 1 / -1;
@@ -93,7 +93,7 @@
                 <div>
                     <label for="group-by-select" class="text-sm font-semibold mr-2">Organizar por:</label>
                     <select id="group-by-select" class="bg-gray-700 border border-gray-600 rounded-lg px-3 py-1 text-sm">
-                        <option value="edition">Edição</option>
+                        <option value="edition" selected>Edição</option>
                         <option value="pokedex">Pokédex</option>
                         <option value="value">Valor</option>
                     </select>
@@ -172,7 +172,7 @@
                 
                 calculateAndDisplayStats();
                 
-                await renderPublicCollection(); // Tornou-se async
+                await renderPublicCollection();
                 controlsContainer.classList.remove('hidden');
                 loader.classList.add('hidden');
 
@@ -183,26 +183,18 @@
             
             function calculateAndDisplayStats() {
                 const TOTAL_POKEMON = 1025;
-                
                 const totalValue = publicCollectionData.reduce((sum, card) => sum + (card.acquiredPrice || 0) * card.quantity, 0);
                 totalValueEl.textContent = `R$ ${totalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-
-                const ownedPokedexNumbers = new Set();
-                publicCollectionData.forEach(card => {
-                    if (card.pokedexNumber) ownedPokedexNumbers.add(card.pokedexNumber);
-                });
+                const ownedPokedexNumbers = new Set(publicCollectionData.filter(c => c.pokedexNumber).map(c => c.pokedexNumber));
                 const uniquePokemonOwned = ownedPokedexNumbers.size;
                 const pokedexPercentage = (uniquePokemonOwned / TOTAL_POKEMON) * 100;
-                
                 const pokedexProgressFill = document.getElementById('pokedex-progress-fill');
                 const pokedexProgressText = document.getElementById('pokedex-progress-text');
-                
                 pokedexProgressFill.style.width = `${pokedexPercentage}%`;
                 if (pokedexPercentage < 30) { pokedexProgressFill.style.background = 'linear-gradient(to right, #ef4444, #f87171)'; } 
                 else if (pokedexPercentage < 60) { pokedexProgressFill.style.background = 'linear-gradient(to right, #f59e0b, #facc15)'; } 
                 else { pokedexProgressFill.style.background = 'linear-gradient(to right, #22c55e, #4ade80)'; }
                 pokedexProgressText.textContent = `${uniquePokemonOwned} / ${TOTAL_POKEMON}`;
-
                 statsContainer.classList.remove('hidden');
             }
 
@@ -210,16 +202,12 @@
                 collectionContainer.innerHTML = '';
                 const groupBy = groupBySelect.value;
                 const allCards = [...publicCollectionData];
-
-                collectionContainer.className = 'flex flex-col gap-4'; // Container principal em coluna
+                collectionContainer.className = 'flex flex-col gap-4';
 
                 if (groupBy === 'pokedex' || groupBy === 'value') {
                     collectionContainer.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4';
-                    if (groupBy === 'pokedex') {
-                        allCards.sort((a, b) => (a.pokedexNumber || 9999) - (b.pokedexNumber || 9999));
-                    } else {
-                        allCards.sort((a, b) => (b.acquiredPrice || 0) - (a.acquiredPrice || 0));
-                    }
+                    if (groupBy === 'pokedex') allCards.sort((a, b) => (a.pokedexNumber || 9999) - (b.pokedexNumber || 9999));
+                    else allCards.sort((a, b) => (b.acquiredPrice || 0) - (a.acquiredPrice || 0));
                     allCards.forEach(card => collectionContainer.appendChild(createCardElement(card, groupBy)));
                 } else { // edition
                     const grouped = {};
@@ -234,16 +222,16 @@
                     for (const groupKey of sortedGroupKeys) {
                         const cardsInGroup = grouped[groupKey];
                         const groupName = cardsInGroup[0].set.name;
-                        const uniqueOwnedCount = new Set(cardsInGroup.map(c => c.id)).size;
+                        const uniqueOwnedIds = new Set(cardsInGroup.map(c => c.id));
                         const setTotal = cardsInGroup[0].set.printedTotal;
-                        const percentage = setTotal > 0 ? (uniqueOwnedCount / setTotal) * 100 : 0;
+                        const percentage = setTotal > 0 ? (uniqueOwnedIds.size / setTotal) * 100 : 0;
                         
                         const headerWrapper = document.createElement('div');
                         headerWrapper.className = 'group-header-wrapper';
                         
                         const groupHeader = document.createElement('div');
                         groupHeader.className = 'group-header';
-                        groupHeader.textContent = `${groupName} (${uniqueOwnedCount}/${setTotal})`;
+                        groupHeader.textContent = `${groupName} (${uniqueOwnedIds.size}/${setTotal})`;
 
                         const progressBarContainer = document.createElement('div');
                         progressBarContainer.className = 'progress-bar-container';
@@ -258,39 +246,55 @@
                         progressBarText.className = 'progress-bar-text';
                         progressBarText.textContent = `${Math.round(percentage)}%`;
 
+                        const cardGrid = document.createElement('div');
+                        cardGrid.className = "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mt-4";
+                        
+                        const loadButton = document.createElement('button');
+                        loadButton.className = "col-span-full bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold py-2 px-4 rounded-lg transition-colors";
+                        loadButton.textContent = 'Ver Coleção Completa';
+                        loadButton.dataset.setId = groupKey;
+                        
+                        loadButton.addEventListener('click', async (e) => {
+                            const btn = e.target;
+                            const setId = btn.dataset.setId;
+                            const grid = btn.nextElementSibling;
+                            btn.textContent = 'Carregando...';
+                            btn.disabled = true;
+
+                            try {
+                                const setResponse = await fetch(`https://api.pokemontcg.io/v2/cards?q=set.id:${setId}&orderBy=number&pageSize=250`);
+                                const setData = await setResponse.json();
+                                const fullSetCards = setData.data;
+                                
+                                grid.innerHTML = '';
+                                
+                                const ownedCardMap = new Map();
+                                publicCollectionData.filter(c => c.set.id === setId).forEach(c => ownedCardMap.set(c.id, c));
+                                
+                                fullSetCards.forEach(apiCard => {
+                                    if (ownedCardMap.has(apiCard.id)) {
+                                        grid.appendChild(createCardElement(ownedCardMap.get(apiCard.id), 'edition'));
+                                    } else {
+                                        grid.appendChild(createMissingCardElement(apiCard));
+                                    }
+                                });
+                                btn.remove(); // Remove o botão após carregar
+
+                            } catch (err) {
+                                console.error("Erro ao carregar dados da edição:", err);
+                                grid.innerHTML = `<p class="col-span-full text-red-400">Erro ao carregar os dados desta edição.</p>`;
+                                btn.textContent = 'Tentar Novamente';
+                                btn.disabled = false;
+                            }
+                        });
+
                         progressBarContainer.appendChild(progressBarFill);
                         progressBarContainer.appendChild(progressBarText);
                         headerWrapper.appendChild(groupHeader);
                         headerWrapper.appendChild(progressBarContainer);
                         collectionContainer.appendChild(headerWrapper);
-
-                        const cardGrid = document.createElement('div');
-                        cardGrid.className = "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4";
+                        collectionContainer.appendChild(loadButton);
                         collectionContainer.appendChild(cardGrid);
-                        cardGrid.innerHTML = `<div class="loader col-span-full mx-auto my-4"></div>`;
-
-                        try {
-                            const setId = cardsInGroup[0].set.id;
-                            const setResponse = await fetch(`https://api.pokemontcg.io/v2/cards?q=set.id:${setId}&orderBy=number&pageSize=250`);
-                            const setData = await setResponse.json();
-                            const fullSetCards = setData.data;
-                            
-                            cardGrid.innerHTML = '';
-                            
-                            const ownedCardMap = new Map();
-                            cardsInGroup.forEach(c => ownedCardMap.set(c.id, c));
-                            
-                            fullSetCards.forEach(apiCard => {
-                                if (ownedCardMap.has(apiCard.id)) {
-                                    cardGrid.appendChild(createCardElement(ownedCardMap.get(apiCard.id), groupBy));
-                                } else {
-                                    cardGrid.appendChild(createMissingCardElement(apiCard));
-                                }
-                            });
-                        } catch (e) {
-                            console.error("Erro ao carregar dados da edição:", e);
-                            cardGrid.innerHTML = `<p class="col-span-full text-red-400">Erro ao carregar os dados completos desta edição.</p>`;
-                        }
                     }
                 }
             }
@@ -304,7 +308,7 @@
             
             function createCardElement(card, groupBy) {
                 const cardElement = document.createElement('div');
-                cardElement.className = "bg-gray-800 p-3 rounded-lg flex flex-col items-center text-center";
+                cardElement.className = "bg-gray-800 p-3 rounded-lg flex flex-col items-center text-center collection-card";
                 
                 let pokedexInfo = '';
                 if (groupBy === 'pokedex' && card.pokedexNumber) {
@@ -320,7 +324,7 @@
                 
                 cardElement.innerHTML = `
                     ${pokedexInfo}
-                    <img src="${card.image}" alt="${card.name}" class="rounded w-full mb-2 card-image-zoom">
+                    <img src="${card.images.large}" alt="${card.name}" class="rounded w-full mb-2 card-image-zoom">
                     <p class="font-bold text-sm">${card.name}</p>
                     ${setInfoHTML}
                     <div class="mt-auto pt-2">
@@ -332,17 +336,17 @@
             }
             
             function createMissingCardElement(apiCard) {
-                const cardBackUrl = 'https://images.pokemontcg.io/pgo/cardback.jpg'; // URL genérica do verso
+                const cardBackUrl = 'https://i.imgur.com/5lYagB3.png'; // URL do verso da carta
                 const element = document.createElement('div');
                 element.className = "bg-gray-900/50 p-3 rounded-lg flex flex-col items-center text-center opacity-60";
                 
                 element.innerHTML = `
-                    <p class="font-bold text-lg text-cyan-400 invisible">#000</p> <img src="${cardBackUrl}" alt="Verso da carta" class="rounded w-full mb-2" title="${apiCard.name} (Faltando)">
+                    <img src="${cardBackUrl}" alt="Verso da carta" class="rounded w-full mb-2" title="${apiCard.name} (Faltando)">
                     <p class="font-bold text-sm text-gray-400">${apiCard.name}</p>
                     <div class="text-xs text-gray-500 flex items-center justify-center gap-1.5 mt-1"><span>#${apiCard.number}</span></div>
                     <div class="mt-auto pt-2">
                         <span class="font-bold text-lg text-gray-600">0x</span>
-                        <p class="text-sm text-gray-600 font-bold">R$ 0,00</p>
+                        <p class="text-sm text-gray-600 font-bold">-</p>
                     </div>
                 `;
                 return element;
