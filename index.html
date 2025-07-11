@@ -103,6 +103,7 @@
             const profileModalCloseBtn = document.getElementById('profile-modal-close-btn');
             const profileForm = document.getElementById('profile-form');
             const profileNameInput = document.getElementById('profile-name');
+            const profileSocialInput = document.getElementById('profile-social');
             const profileFeedback = document.getElementById('profile-feedback');
 
             const searchInput = document.getElementById('search-input');
@@ -553,7 +554,6 @@
             await fetchExchangeRate();
             await populateSetDropdown();
             toggleSearchMode();
-
             searchButton.addEventListener('click', searchCards);
             searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') searchCards(); });
             addCardForm.addEventListener('submit', handleAddFormSubmit);
@@ -595,6 +595,8 @@
             publicToggle.addEventListener('change', async () => { if (!currentUserId) return; const isPublic = publicToggle.checked; const profileRef = doc(db, 'public_profiles', currentUserId); try { const userProfileDoc = await getDoc(doc(db, "users", currentUserId)); const displayName = userProfileDoc.exists() && userProfileDoc.data().displayName ? userProfileDoc.data().displayName : auth.currentUser.email; await setDoc(profileRef, { isPublic: isPublic, ownerName: displayName }, { merge: true }); updateShareUI(isPublic); } catch (error) { console.error("Erro ao atualizar status público:", error); alert("Não foi possível atualizar o status da sua coleção."); }});
             copyLinkBtn.addEventListener('click', () => { if (!publicToggle.checked) return; shareableLink.select(); document.execCommand('copy'); copyFeedback.textContent = 'Link copiado!'; setTimeout(() => { copyFeedback.textContent = '' }, 2000); });
             shareModalCloseBtn.addEventListener('click', () => shareModal.style.display = 'none');
+            
+            // ++ ADICIONANDO LISTENERS DO PERFIL ++
             openProfileModalBtn.addEventListener('click', async () => {
                 profileFeedback.textContent = '';
                 profileForm.reset();
@@ -603,6 +605,8 @@
                 if (docSnap.exists()) {
                     profileNameInput.value = docSnap.data().displayName || '';
                     profileSocialInput.value = docSnap.data().socialUrl || '';
+                } else {
+                    profileNameInput.value = auth.currentUser.displayName || auth.currentUser.email;
                 }
                 profileModal.style.display = 'flex';
             });
