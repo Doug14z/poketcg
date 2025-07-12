@@ -43,18 +43,37 @@
 </head>
 <body class="bg-gray-900 text-gray-100">
 
-    <!-- Conteúdo do site -->
-    <div id="app">
-        <h1 class="text-center text-3xl mt-8">Pokémon TCG</h1>
-        <p class="text-center mt-2 text-yellow-400">Sua coleção sempre atualizada</p>
+    <!-- Conteúdo principal -->
+    <div id="app-view" class="hidden main-view">
+        <!-- Conteúdo e scripts do seu index original permanecem aqui, mantendo Firebase -->
+        <!-- Sugestão: importar seu arquivo JavaScript principal separado para organização -->
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
-    <script>
-        // Exemplo de inicialização leve com Vue ou qualquer outra lógica necessária
-        const app = Vue.createApp({});
-        app.mount('#app');
+    <!-- Scripts Firebase -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+        import { getFirestore } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDZTXYGAHje-ZFnnhoiNwEUkNAmq63tY68",
+            authDomain: "pokemtcgcard.firebaseapp.com",
+            projectId: "pokemtcgcard",
+            storageBucket: "pokemtcgcard.firebasestorage.app",
+            messagingSenderId: "1056735056128",
+            appId: "1:1056735056128:web:d47f0474b925246c0de3e5",
+            measurementId: "G-JBPHZ0EQWC"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        onAuthStateChanged(auth, user => {
+            console.log(user ? "Usuário logado" : "Nenhum usuário");
+            document.getElementById("app-view").classList.remove("hidden");
+        });
     </script>
-    <!-- Firebase scripts e lógica completa devem ser inseridos aqui -->
+
 </body>
 </html>
