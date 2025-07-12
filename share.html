@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Poppins', sans-serif; background-color: #111827; color: #f3f4f6; }
-        h1, h2, .group-header { font-family: 'Press Start 2P', cursive; }
+        h1, h2, .group-header-name { font-family: 'Press Start 2P', cursive; }
         .loader { border: 4px solid #4b5563; border-top: 4px solid #f59e0b; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
@@ -21,14 +21,23 @@
         .group-header-wrapper {
             grid-column: 1 / -1;
             background-color: #374151;
-            padding: 0.5rem 1rem;
+            padding: 0.75rem 1rem;
             border-radius: 8px;
             margin-top: 1rem;
-            margin-bottom: 0.5rem;
+        }
+
+        .set-logo {
+            height: 96px; 
+            width: 96px;
+            object-fit: contain;
+            flex-shrink: 0;
+            transition: transform 0.2s ease-in-out;
+        }
+        .header-clickable {
             cursor: pointer;
         }
-        .group-header-wrapper:hover {
-            background-color: #4b5563;
+        .header-clickable:hover .set-logo {
+            transform: scale(1.1);
         }
 
         .progress-bar-container {
@@ -79,7 +88,7 @@
                     <label for="group-by-select" class="text-sm font-semibold mr-2">Organizar por:</label>
                     <select id="group-by-select" class="bg-gray-700 border border-gray-600 rounded-lg px-3 py-1 text-sm">
                         <option value="pokedex">Pokédex</option>
-                        <option value="edition">Edição</option>
+                        <option value="edition" selected>Edição</option>
                         <option value="value">Valor</option>
                     </select>
                 </div>
@@ -87,7 +96,7 @@
 
             <div id="loader" class="loader mx-auto"></div>
             <div id="error-message" class="hidden text-center text-red-400"></div>
-            <div id="public-collection" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4"></div>
+            <div id="public-collection" class="flex flex-col gap-2"></div>
         </main>
         
         <footer class="text-center p-6 mt-8 border-t border-gray-700 text-xs" style="font-family: 'Poppins', sans-serif;">
@@ -121,7 +130,6 @@
             const groupBySelect = document.getElementById('group-by-select');
             
             let publicCollectionData = [];
-            let groupedEditions = {};
 
             const params = new URLSearchParams(window.location.search);
             const userId = params.get('user');
@@ -151,7 +159,7 @@
                 
                 publicCollectionData = collectionSnapshot.docs.map(doc => ({ ...doc.data(), docId: doc.id }));
                 
-                renderPublicCollection();
+                await renderPublicCollection();
                 controlsContainer.classList.remove('hidden');
                 controlsContainer.classList.add('flex');
                 loader.classList.add('hidden');
@@ -165,7 +173,7 @@
                 collectionContainer.innerHTML = '';
                 const groupBy = groupBySelect.value;
                 const allCards = [...publicCollectionData].filter(c => c && c.set && c.set.id);
-                
+
                 if (groupBy === 'pokedex' || groupBy === 'value') {
                     collectionContainer.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4';
                     if (groupBy === 'pokedex') allCards.sort((a, b) => (a.pokedexNumber || 9999) - (b.pokedexNumber || 9999));
@@ -173,16 +181,16 @@
                     allCards.forEach(card => collectionContainer.appendChild(createCardElement(card, groupBy)));
                 } else { // edition
                     collectionContainer.className = 'flex flex-col gap-2';
-                    groupedEditions = {};
+                    const grouped = {};
                     allCards.forEach(card => {
-                        if (!groupedEditions[card.set.id]) groupedEditions[card.set.id] = [];
-                        groupedEditions[card.set.id].push(card);
+                        if (!grouped[card.set.id]) grouped[card.set.id] = [];
+                        grouped[card.set.id].push(card);
                     });
                     
-                    const sortedGroupKeys = Object.keys(groupedEditions).sort((a, b) => new Date(groupedEditions[b][0].set.releaseDate) - new Date(groupedEditions[a][0].set.releaseDate));
+                    const sortedGroupKeys = Object.keys(grouped).sort((a, b) => new Date(grouped[b][0].set.releaseDate) - new Date(grouped[a][0].set.releaseDate));
 
                     for (const setId of sortedGroupKeys) {
-                        const cardsInGroup = groupedEditions[setId];
+                        const cardsInGroup = grouped[setId];
                         const set = cardsInGroup[0].set;
                         const uniqueOwnedIds = new Set(cardsInGroup.map(c => c.id));
                         const percentage = set.printedTotal > 0 ? (uniqueOwnedIds.size / set.printedTotal) * 100 : 0;
@@ -191,30 +199,15 @@
                         headerWrapper.className = 'group-header-wrapper';
                         
                         const groupHeader = document.createElement('div');
-                        groupHeader.className = 'group-header';
+                        groupHeader.className = 'group-header-name text-sm';
                         groupHeader.textContent = `${set.name} (${uniqueOwnedIds.size}/${set.printedTotal})`;
-                        
-                        const progressBarContainer = document.createElement('div');
-                        progressBarContainer.className = 'progress-bar-container';
-                        const progressBarFill = document.createElement('div');
-                        progressBarFill.className = 'progress-bar-fill';
-                        progressBarFill.style.width = `${percentage}%`;
-                        if (percentage < 30) { progressBarFill.style.background = 'linear-gradient(to right, #ef4444, #f87171)'; }
-                        else if (percentage < 60) { progressBarFill.style.background = 'linear-gradient(to right, #f59e0b, #facc15)'; }
-                        else { progressBarFill.style.background = 'linear-gradient(to right, #22c55e, #4ade80)'; }
-                        
-                        const progressBarText = document.createElement('span');
-                        progressBarText.className = 'progress-bar-text';
-                        progressBarText.textContent = `${Math.round(percentage)}%`;
 
                         const cardGrid = document.createElement('div');
                         cardGrid.className = "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mt-2 hidden";
-
+                        
                         headerWrapper.addEventListener('click', async function() {
-                            const grid = this.nextElementSibling;
-                            grid.classList.toggle('hidden');
+                            cardGrid.classList.toggle('hidden');
                             
-                            // Carrega a coleção completa apenas na primeira vez que for clicada
                             if (grid.children.length === 0) {
                                 grid.innerHTML = `<div class="loader col-span-full mx-auto my-4"></div>`;
                                 try {
@@ -243,10 +236,7 @@
                             }
                         }, { once: false });
 
-                        progressBarContainer.appendChild(progressBarFill);
-                        progressBarContainer.appendChild(progressBarText);
                         headerWrapper.appendChild(groupHeader);
-                        headerWrapper.appendChild(progressBarContainer);
                         collectionContainer.appendChild(headerWrapper);
                         collectionContainer.appendChild(cardGrid);
                     }
@@ -262,7 +252,7 @@
             
             function createCardElement(card, groupBy) {
                 const cardElement = document.createElement('div');
-                cardElement.className = "bg-gray-800 p-3 rounded-lg flex flex-col items-center text-center collection-card";
+                cardElement.className = "bg-gray-800 p-3 rounded-lg flex flex-col items-center text-center";
                 
                 let pokedexInfo = '';
                 if (groupBy === 'pokedex' && card.pokedexNumber) {
@@ -289,12 +279,13 @@
             }
 
             function createMissingCardElement(apiCard) {
-                const cardBackUrl = 'https://i.imgur.com/5lYagB3.png'; // URL do verso da carta
+                const cardBackUrl = 'https://i.imgur.com/5lYagB3.png';
                 const element = document.createElement('div');
                 element.className = "bg-gray-900/50 p-3 rounded-lg flex flex-col items-center text-center opacity-60";
                 
                 element.innerHTML = `
-                    <p class="font-bold text-lg invisible">#000</p> <img src="${cardBackUrl}" alt="Verso da carta" class="rounded w-full mb-2" title="${apiCard.name} (Faltando)">
+                    <p class="font-bold text-lg invisible">#000</p> 
+                    <img src="${cardBackUrl}" alt="Verso da carta" class="rounded w-full mb-2" title="${apiCard.name} (Faltando)">
                     <p class="font-bold text-sm text-gray-400 mt-1">${apiCard.name}</p>
                     <div class="text-xs text-gray-500 flex items-center justify-center gap-1.5 mt-1"><span>#${apiCard.number}</span></div>
                     <div class="mt-auto pt-2 text-center">
