@@ -1,72 +1,71 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerenciador de Coleção Pokémon TCG</title>
+    <title>Coleção Pokémon TCG</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
         body { 
             font-family: 'Poppins', sans-serif; 
-            background: linear-gradient(135deg, #111827, #1c2a41);
+            background-color: #111827; 
             color: #f3f4f6; 
         }
         h1, h2, h3, h4, h5, h6 {
             font-family: 'Press Start 2P', cursive;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
-        
-        /* Efeito Glassmorphism */
-        .glass-panel {
-            background: rgba(31, 41, 55, 0.6);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 16px;
-            padding: 2rem;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-        }
-        
-        .modal-content.glass-panel {
-             background: rgba(40, 52, 70, 0.7);
-        }
-
-        /* Animações e Transições */
-        .card-item {
-            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
-            animation: fadeIn 0.5s ease-in-out;
-        }
-        .card-item:hover { 
-            transform: scale(1.05); 
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-        }
-        button, select {
-            transition: all 0.2s ease-in-out;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
+        .card-item:hover { transform: scale(1.05); }
         .loader { border: 4px solid #4b5563; border-top: 4px solid #f59e0b; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.5); display: none; align-items: center; justify-content: center; z-index: 50; backdrop-filter: blur(8px); }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.75); display: none; align-items: center; justify-content: center; z-index: 50; backdrop-filter: blur(4px); }
+        .modal-content { background-color: #1f2937; padding: 2rem; border-radius: 16px; width: 90%; max-width: 800px; max-height: 85vh; box-shadow: 0 10px 25px rgba(0,0,0,0.2); border: 1px solid #374151; }
         
-        .group-header {
+        .group-header-wrapper {
             grid-column: 1 / -1;
             background-color: #374151;
-            color: #d1d5db;
             padding: 0.5rem 1rem;
-            font-weight: bold;
             border-radius: 8px;
             margin-top: 1rem;
             margin-bottom: 0.5rem;
         }
-        
+        .group-header {
+            color: #d1d5db;
+            font-weight: bold;
+        }
+
+        .progress-bar-container {
+            position: relative;
+            height: 22px;
+            background-color: #111827;
+            border-radius: 8px;
+            border: 2px solid #4b5563;
+            margin-top: 0.5rem;
+            overflow: hidden;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            border-radius: 6px;
+            transition: width 0.5s ease-in-out, background 0.5s ease-in-out;
+        }
+        .progress-bar-text {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #ffffff;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+        }
+
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #2d3748; }
         ::-webkit-scrollbar-thumb { background: #4a5568; border-radius: 4px; }
@@ -80,7 +79,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot, collection, deleteDoc, updateDoc, increment, getDoc } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
 
         document.addEventListener('DOMContentLoaded', async () => {
@@ -97,15 +96,12 @@
             const openAuthModalBtn = document.getElementById('open-auth-modal-btn');
             const userEmailDisplay = document.getElementById('user-email-display');
             const logoutButton = document.getElementById('logout-button');
-            const openProfileModalBtn = document.getElementById('open-profile-modal-btn');
-            const profileModal = document.getElementById('profile-modal');
-            const profileModalCloseBtn = document.getElementById('profile-modal-close-btn');
-            const profileForm = document.getElementById('profile-form');
-            const profileNameInput = document.getElementById('profile-name');
-            const profileSocialInput = document.getElementById('profile-social');
-            const profileFeedback = document.getElementById('profile-feedback');
             const searchInput = document.getElementById('search-input');
             const searchButton = document.getElementById('search-button');
+            const searchTypeRadios = document.querySelectorAll('input[name="search-type"]');
+            const searchInputContainer = document.getElementById('search-input-container');
+            const setSelectContainer = document.getElementById('set-select-container');
+            const setSelect = document.getElementById('set-select');
             const searchResultsContainer = document.getElementById('search-results');
             const myCollectionContainer = document.getElementById('my-collection');
             const loader = document.getElementById('loader');
@@ -138,23 +134,98 @@
             let db, auth;
 
             const showView = (viewId) => {
-                const appView = document.getElementById('app-view');
-                if(appView) appView.classList.remove('hidden');
+                document.querySelectorAll('.main-view').forEach(view => view.classList.add('hidden'));
                 const viewToShow = document.getElementById(viewId);
                 if(viewToShow) viewToShow.classList.remove('hidden');
             };
 
+            const getFinishDisplayName = (key) => {
+                const names = {
+                    normal: 'Normal', holofoil: 'Holo', reverseHolofoil: 'Reverse Holo',
+                    '1stEditionHolofoil': '1ª Edição Holo', '1stEditionNormal': '1ª Edição Normal',
+                    unlimitedHolofoil: 'Unlimited Holo'
+                };
+                return names[key] || key;
+            };
+
+            const fetchExchangeRate = async () => {
+                try {
+                    const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
+                    if (!response.ok) throw new Error('API de câmbio falhou');
+                    const data = await response.json();
+                    usdToBrlRate = data.rates.BRL;
+                } catch (error) {
+                    console.error("Não foi possível buscar a taxa de câmbio, usando valor padrão.", error);
+                }
+            };
+            
+            const populateSetDropdown = async () => {
+                try {
+                    const response = await fetch('https://api.pokemontcg.io/v2/sets');
+                    if (!response.ok) throw new Error('Falha ao buscar edições');
+                    const data = await response.json();
+                    const sortedSets = data.data.sort((a, b) => new Date(b.releaseDate) - new Date(a.releaseDate));
+                    setSelect.innerHTML = '<option value="">Selecione uma edição...</option>';
+                    sortedSets.forEach(set => {
+                        const option = document.createElement('option');
+                        option.value = set.id;
+                        option.textContent = set.name;
+                        setSelect.appendChild(option);
+                    });
+                } catch (error) {
+                    console.error("Erro ao popular dropdown de edições:", error);
+                    setSelect.innerHTML = '<option value="">Não foi possível carregar as edições</option>';
+                }
+            };
+
+            const toggleSearchMode = () => {
+                const searchType = document.querySelector('input[name="search-type"]:checked').value;
+                if (searchType === 'card') {
+                    searchInputContainer.classList.remove('hidden');
+                    setSelectContainer.classList.add('hidden');
+                } else {
+                    searchInputContainer.classList.add('hidden');
+                    setSelectContainer.classList.remove('hidden');
+                }
+            };
+            
+            searchTypeRadios.forEach(radio => radio.addEventListener('change', toggleSearchMode));
+
             const searchCards = async () => {
-                const searchTerm = searchInput.value.trim();
-                if (!searchTerm) return;
+                const searchType = document.querySelector('input[name="search-type"]:checked').value;
+                let searchTerm = '';
+                let query = '';
+                let postFilter = null;
+                if (searchType === 'set') {
+                    searchTerm = setSelect.value;
+                    if (!searchTerm) { alert('Por favor, selecione uma edição.'); return; }
+                    query = `set.id:"${searchTerm}"`;
+                } else {
+                    searchTerm = searchInput.value.trim();
+                    if (!searchTerm) return;
+                    const numberSearchRegex = /^(\d+)\/(\d+)$/;
+                    const numberMatch = searchTerm.match(numberSearchRegex);
+                    if (numberMatch) {
+                        const cardNumber = numberMatch[1];
+                        query = `number:"${cardNumber}"`;
+                        postFilter = (cards) => {
+                            const setTotal = parseInt(numberMatch[2], 10);
+                            return cards.filter(card => card.set.printedTotal === setTotal);
+                        };
+                    } else {
+                        query = `name:"${searchTerm}*"`;
+                    }
+                }
                 loader.classList.remove('hidden');
                 searchResultsContainer.innerHTML = '';
                 searchCache.clear();
                 try {
-                    const response = await fetch(`https://api.pokemontcg.io/v2/cards?q=name:"${searchTerm}*"`);
+                    const response = await fetch(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(query)}`);
                     if (!response.ok) throw new Error('A resposta da rede não foi "ok".');
                     const data = await response.json();
-                    displaySearchResults(data.data);
+                    let cardsToShow = data.data || [];
+                    if (postFilter) cardsToShow = postFilter(cardsToShow);
+                    displaySearchResults(cardsToShow);
                 } catch (error) {
                     console.error("Falha ao buscar cartas:", error);
                     searchResultsContainer.innerHTML = `<p class="text-red-400 text-center">Erro ao buscar cartas. Tente novamente.</p>`;
@@ -172,8 +243,8 @@
                 cards.forEach(card => {
                     searchCache.set(card.id, card);
                     const cardElement = document.createElement('div');
-                    cardElement.className = 'card-item relative';
-                    cardElement.innerHTML = `<img src="${card.images.small}" alt="${card.name}" class="rounded-lg shadow-lg w-full"><button data-card-id="${card.id}" class="open-add-modal-btn absolute bottom-2 right-2 bg-yellow-500 hover:bg-yellow-600 text-gray-900 rounded-full w-10 h-10 flex items-center justify-center text-2xl font-bold hover:scale-110">+</button>`;
+                    cardElement.className = 'card-item relative transition-transform duration-200';
+                    cardElement.innerHTML = `<img src="${card.images.small}" alt="${card.name}" class="rounded-lg shadow-lg w-full"><button data-card-id="${card.id}" class="open-add-modal-btn absolute bottom-2 right-2 bg-yellow-500 hover:bg-yellow-600 text-gray-900 rounded-full w-10 h-10 flex items-center justify-center text-2xl font-bold transition-transform duration-200 hover:scale-110">+</button>`;
                     searchResultsContainer.appendChild(cardElement);
                 });
                 document.querySelectorAll('.open-add-modal-btn').forEach(button => button.addEventListener('click', (e) => openAddCardModal(e.currentTarget.dataset.cardId)));
@@ -190,10 +261,27 @@
                 const modalCardImage = document.getElementById('modal-card-image');
                 const modalCardName = document.getElementById('modal-card-name');
                 const modalCardSetInfo = document.getElementById('modal-card-set-info');
+                const finishSelect = document.getElementById('finish');
                 modalCardImage.src = card.images.small;
                 modalCardName.textContent = card.name;
                 const releaseYear = new Date(card.set.releaseDate).getFullYear();
                 modalCardSetInfo.innerHTML = `<span class="flex items-center gap-2">${card.set.name} <img src="${card.set.images.symbol}" class="h-5" alt="${card.set.name}"></span> ${releaseYear} &bull; #${card.number} / ${card.set.printedTotal}`;
+                finishSelect.innerHTML = '';
+                if (card.tcgplayer && card.tcgplayer.prices) {
+                    for (const key in card.tcgplayer.prices) {
+                        if (card.tcgplayer.prices[key]) {
+                            const option = document.createElement('option');
+                            option.value = key;
+                            option.textContent = getFinishDisplayName(key);
+                            finishSelect.appendChild(option);
+                        }
+                    }
+                } else {
+                     const option = document.createElement('option');
+                     option.value = 'normal';
+                     option.textContent = 'Normal';
+                     finishSelect.appendChild(option);
+                }
                 addCardForm.dataset.cardId = card.id;
                 addCardForm.reset();
                 updatePriceDisplay();
@@ -205,9 +293,10 @@
                 const cardId = addCardForm.dataset.cardId;
                 const card = searchCache.get(cardId);
                 const quality = addCardForm.quality.value;
+                const finish = addCardForm.finish.value;
                 let priceUsd = 0;
-                if (card.tcgplayer && card.tcgplayer.prices) {
-                    const prices = card.tcgplayer.prices.holofoil || card.tcgplayer.prices.reverseHolofoil || card.tcgplayer.prices.normal || Object.values(card.tcgplayer.prices)[0];
+                if (card.tcgplayer && card.tcgplayer.prices && card.tcgplayer.prices[finish]) {
+                    const prices = card.tcgplayer.prices[finish];
                     if (prices) {
                         switch (quality) {
                             case 'Nova': priceUsd = prices.market || prices.mid || 0; break;
@@ -226,25 +315,18 @@
                 const cardId = addCardForm.dataset.cardId;
                 const card = searchCache.get(cardId);
                 const quality = addCardForm.quality.value;
+                const finishKey = addCardForm.finish.value;
+                const finishText = getFinishDisplayName(finishKey);
                 const price = parseFloat(addCardForm.dataset.currentPrice);
                 const cardData = { 
-                    id: card.id, 
-                    name: card.name, 
-                    image: card.images.small, 
+                    id: card.id, name: card.name, image: card.images.small, 
                     set: {
-                        id: card.set.id,
-                        name: card.set.name,
-                        series: card.set.series,
-                        printedTotal: card.set.printedTotal,
-                        total: card.set.total,
+                        id: card.set.id, name: card.set.name, series: card.set.series,
+                        printedTotal: card.set.printedTotal, total: card.set.total,
                         releaseDate: card.set.releaseDate,
-                        images: {
-                           symbol: card.set.images.symbol,
-                           logo: card.set.images.logo
-                        }
+                        images: { symbol: card.set.images.symbol, logo: card.set.images.logo }
                     }, 
-                    number: card.number, 
-                    quality: quality, 
+                    number: card.number, quality: quality, finish: finishText,
                     acquiredPrice: price, 
                     pokedexNumber: card.nationalPokedexNumbers ? card.nationalPokedexNumbers[0] : null 
                 };
@@ -259,19 +341,21 @@
                 const detailsCardName = document.getElementById('details-card-name');
                 const detailsCardSetInfo = document.getElementById('details-card-set-info');
                 const detailsCardQuality = document.getElementById('details-card-quality');
+                const detailsCardFinish = document.getElementById('details-card-finish');
                 const detailsCardPrice = document.getElementById('details-card-price');
                 detailsCardImage.src = card.image;
                 detailsCardName.textContent = card.name;
                 const releaseYear = new Date(card.set.releaseDate).getFullYear();
                 detailsCardSetInfo.innerHTML = `<span class="flex items-center gap-2 text-lg">${card.set.name} <img src="${card.set.images.symbol}" class="h-6" alt="${card.set.name}"></span> <span class="text-sm text-gray-400">${releaseYear} &bull; #${card.number} / ${card.set.printedTotal}</span>`;
                 detailsCardQuality.textContent = card.quality;
+                detailsCardFinish.textContent = card.finish;
                 detailsCardPrice.textContent = `R$ ${card.acquiredPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                 detailsModal.style.display = 'flex';
             };
 
             const addCardToCollection = async (cardData) => {
                 if (!currentUserId) return;
-                const docId = `${cardData.id}-${cardData.quality}`;
+                const docId = `${cardData.id}-${cardData.quality}-${cardData.finish}`;
                 const cardRef = doc(db, `users/${currentUserId}/tcg-collection`, docId);
                 const docSnap = await getDoc(cardRef);
                 if (docSnap.exists()) {
@@ -309,10 +393,24 @@
 
             const renderCollection = () => {
                 const container = myCollectionContainer;
+                const TOTAL_POKEMON = 1025;
                 if (!collectionData) return;
                 container.innerHTML = '';
                 let totalCards = 0, totalValue = 0, uniqueCards = collectionData.size;
-
+                const allCards = Array.from(collectionData.values());
+                const ownedPokedexNumbers = new Set();
+                allCards.forEach(card => {
+                    if (card.pokedexNumber) ownedPokedexNumbers.add(card.pokedexNumber);
+                });
+                const uniquePokemonOwned = ownedPokedexNumbers.size;
+                const pokedexPercentage = (uniquePokemonOwned / TOTAL_POKEMON) * 100;
+                const pokedexProgressFill = document.getElementById('pokedex-progress-fill');
+                const pokedexProgressText = document.getElementById('pokedex-progress-text');
+                pokedexProgressFill.style.width = `${pokedexPercentage}%`;
+                 if (pokedexPercentage < 30) { pokedexProgressFill.style.background = 'linear-gradient(to right, #ef4444, #f87171)'; } 
+                 else if (pokedexPercentage < 60) { pokedexProgressFill.style.background = 'linear-gradient(to right, #f59e0b, #facc15)'; } 
+                 else { pokedexProgressFill.style.background = 'linear-gradient(to right, #22c55e, #4ade80)';}
+                pokedexProgressText.textContent = `${uniquePokemonOwned} / ${TOTAL_POKEMON}`;
                 if (collectionData.size === 0) {
                     container.innerHTML = `<p class="text-center text-gray-400 col-span-full py-10">A sua coleção está vazia.</p>`;
                     collectionCount.textContent = 0;
@@ -320,38 +418,54 @@
                     collectionValue.textContent = '0,00';
                     return;
                 }
-
-                const allCards = Array.from(collectionData.values());
-                
                 allCards.forEach(card => {
                     totalCards += card.quantity;
                     totalValue += (card.acquiredPrice || 0) * card.quantity;
                 });
-
                 const groupBy = groupBySelect.value;
                 container.innerHTML = '';
-
                 if (groupBy === 'pokedex' || groupBy === 'value') {
                      if (groupBy === 'pokedex') allCards.sort((a, b) => (a.pokedexNumber || 9999) - (b.pokedexNumber || 9999));
                      else allCards.sort((a, b) => (b.acquiredPrice || 0) - (a.acquiredPrice || 0));
                     allCards.forEach(card => container.appendChild(createCardElement(card, groupBy)));
-                } else {
+                } else { 
                     const grouped = {};
                     allCards.forEach(card => {
                         const key = card.set.name;
                         if (!grouped[key]) grouped[key] = [];
                         grouped[key].push(card);
                     });
-                    const sortedGroupKeys = Object.keys(grouped).sort();
+                    const sortedGroupKeys = Object.keys(grouped).sort((a,b) => new Date(grouped[b][0].set.releaseDate) - new Date(grouped[a][0].set.releaseDate));
                     for (const groupName of sortedGroupKeys) {
+                        const cardsInGroup = grouped[groupName];
+                        const uniqueOwnedCount = new Set(cardsInGroup.map(c => c.id)).size;
+                        const setTotal = cardsInGroup[0].set.printedTotal;
+                        const percentage = setTotal > 0 ? (uniqueOwnedCount / setTotal) * 100 : 0;
+                        const headerWrapper = document.createElement('div');
+                        headerWrapper.className = 'group-header-wrapper';
                         const groupHeader = document.createElement('div');
                         groupHeader.className = 'group-header text-base';
-                        groupHeader.textContent = groupName;
-                        container.appendChild(groupHeader);
-                        grouped[groupName].sort((a,b)=>parseInt(a.number)-parseInt(b.number)).forEach(card => container.appendChild(createCardElement(card, groupBy)));
+                        groupHeader.textContent = `${groupName} (${uniqueOwnedCount}/${setTotal})`;
+                        const progressBarContainer = document.createElement('div');
+                        progressBarContainer.className = 'progress-bar-container';
+                        const progressBarFill = document.createElement('div');
+                        progressBarFill.className = 'progress-bar-fill';
+                        progressBarFill.style.width = `${percentage}%`;
+                        if (percentage < 30) { progressBarFill.style.background = 'linear-gradient(to right, #ef4444, #f87171)'; } 
+                        else if (percentage < 60) { progressBarFill.style.background = 'linear-gradient(to right, #f59e0b, #facc15)'; } 
+                        else { progressBarFill.style.background = 'linear-gradient(to right, #22c55e, #4ade80)'; }
+                        const progressBarText = document.createElement('span');
+                        progressBarText.className = 'progress-bar-text';
+                        progressBarText.textContent = `${Math.round(percentage)}%`;
+                        progressBarContainer.appendChild(progressBarFill);
+                        progressBarContainer.appendChild(progressBarText);
+                        headerWrapper.appendChild(groupHeader);
+                        headerWrapper.appendChild(progressBarContainer);
+                        container.appendChild(headerWrapper);
+                        cardsInGroup.sort((a, b) => (parseInt(String(a.number).replace(/[^0-9]/g, '')) || 0) - (parseInt(String(b.number).replace(/[^0-9]/g, '')) || 0))
+                            .forEach(card => container.appendChild(createCardElement(card, groupBy)));
                     }
                 }
-                
                 collectionCount.textContent = totalCards;
                 uniqueCollectionCount.textContent = uniqueCards;
                 collectionValue.textContent = totalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -362,19 +476,22 @@
                 const qualityClass = qualityClasses[card.quality] || 'bg-gray-500';
                 let pokedexInfo = '';
                 if (groupBy === 'pokedex' && card.pokedexNumber) {
-                    pokedexInfo = `<p class="font-bold text-sm text-cyan-400 mb-1">#${String(card.pokedexNumber).padStart(3, '0')}</p>`;
+                    pokedexInfo = `<p class="font-bold text-lg text-cyan-400 mb-1">#${String(card.pokedexNumber).padStart(3, '0')}</p>`;
                 }
                 const cardElement = document.createElement('div');
-                cardElement.className = `bg-gray-800 p-3 rounded-lg flex flex-col items-center text-center collection-card cursor-pointer hover:bg-gray-700`;
+                cardElement.className = `bg-gray-800 p-3 rounded-lg flex flex-col items-center text-center collection-card cursor-pointer transition-colors hover:bg-gray-700`;
                 cardElement.dataset.id = card.docId;
                 const setInfoHTML = `<div class="text-xs text-gray-400 flex items-center justify-center gap-1.5 mt-1"><span>${card.set.name}</span> <img src="${card.set.images.symbol}" class="h-4" alt="Set Symbol"> <span>#${card.number}</span></div>`;
                 cardElement.innerHTML = `
                     <div class="flex-grow w-full pointer-events-none">
-                        <img src="${card.image}" alt="${card.name}" class="rounded w-full mb-2">
                         ${pokedexInfo}
+                        <img src="${card.image}" alt="${card.name}" class="rounded w-full mb-2">
                         <p class="font-bold text-sm">${card.name}</p>
                         ${setInfoHTML}
-                        <div class="text-xs font-semibold my-1 px-2 py-0.5 rounded-full ${qualityClass}">${card.quality}</div>
+                        <div class="flex flex-wrap items-center justify-center gap-1 my-1">
+                           <div class="text-xs font-semibold px-2 py-0.5 rounded-full ${qualityClass}">${card.quality}</div>
+                           <div class="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-600 text-white">${card.finish}</div>
+                        </div>
                         <p class="text-sm text-yellow-400 font-bold mb-2">R$ ${card.acquiredPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                     </div>
                     <div class="flex items-center gap-2 mt-4">
@@ -423,10 +540,13 @@
             };
 
             await fetchExchangeRate();
+            await populateSetDropdown();
+            toggleSearchMode();
             searchButton.addEventListener('click', searchCards);
             searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') searchCards(); });
             addCardForm.addEventListener('submit', handleAddFormSubmit);
             addCardForm.quality.addEventListener('change', updatePriceDisplay);
+            addCardForm.finish.addEventListener('change', updatePriceDisplay);
             addCardModalCloseBtn.addEventListener('click', () => addCardModal.style.display = 'none');
             detailsModalCloseBtn.addEventListener('click', () => detailsModal.style.display = 'none');
             myCollectionContainer.addEventListener('click', handleCollectionClick);
@@ -443,49 +563,6 @@
             copyLinkBtn.addEventListener('click', () => { if (!publicToggle.checked) return; shareableLink.select(); document.execCommand('copy'); copyFeedback.textContent = 'Link copiado!'; setTimeout(() => { copyFeedback.textContent = '' }, 2000); });
             shareModalCloseBtn.addEventListener('click', () => shareModal.style.display = 'none');
             
-            openProfileModalBtn.addEventListener('click', async () => {
-                profileFeedback.textContent = '';
-                profileForm.reset();
-                const userDocRef = doc(db, 'users', currentUserId);
-                const docSnap = await getDoc(userDocRef);
-                if (docSnap.exists()) {
-                    profileNameInput.value = docSnap.data().displayName || '';
-                    profileSocialInput.value = docSnap.data().socialUrl || '';
-                } else {
-                    profileNameInput.value = auth.currentUser.displayName || auth.currentUser.email;
-                }
-                profileModal.style.display = 'flex';
-            });
-            profileModalCloseBtn.addEventListener('click', () => profileModal.style.display = 'none');
-            profileForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const newDisplayName = profileNameInput.value.trim();
-                const newSocialUrl = profileSocialInput.value.trim();
-                if (!newDisplayName) { alert("O nome/nick não pode estar vazio."); return; }
-                const userDocRef = doc(db, 'users', currentUserId);
-                const publicProfileRef = doc(db, 'public_profiles', currentUserId);
-                try {
-                    await setDoc(userDocRef, { displayName: newDisplayName, socialUrl: newSocialUrl }, { merge: true });
-                    const publicProfileSnap = await getDoc(publicProfileRef);
-                    if (publicProfileSnap.exists() && publicProfileSnap.data().isPublic) {
-                       await setDoc(publicProfileRef, { ownerName: newDisplayName }, { merge: true });
-                    }
-                    if (auth.currentUser.displayName !== newDisplayName) {
-                      await updateProfile(auth.currentUser, { displayName: newDisplayName });
-                    }
-                    userEmailDisplay.textContent = newDisplayName;
-                    profileFeedback.textContent = "Perfil salvo com sucesso!";
-                    profileFeedback.classList.remove('text-red-400');
-                    profileFeedback.classList.add('text-green-400');
-                    setTimeout(() => profileModal.style.display = 'none', 1500);
-                } catch (error) {
-                    console.error("Erro ao salvar perfil:", error);
-                    profileFeedback.textContent = "Erro ao salvar o perfil.";
-                    profileFeedback.classList.remove('text-green-400');
-                    profileFeedback.classList.add('text-red-400');
-                }
-            });
-
             try {
                 const firebaseConfig = {
                     apiKey: "AIzaSyDZTXYGAHje-ZFnnhoiNwEUkNAmq63tY68",
@@ -499,14 +576,11 @@
                 const app = initializeApp(firebaseConfig);
                 auth = getAuth(app);
                 db = getFirestore(app);
-                onAuthStateChanged(auth, async user => {
+                onAuthStateChanged(auth, user => {
                     if (collectionUnsubscribe) collectionUnsubscribe();
                     if (user) {
                         currentUserId = user.uid;
-                        const userDocRef = doc(db, 'users', user.uid);
-                        const userDocSnap = await getDoc(userDocRef);
-                        const displayName = userDocSnap.exists() && userDocSnap.data().displayName ? userDocSnap.data().displayName : user.email;
-                        userEmailDisplay.textContent = displayName;
+                        userEmailDisplay.textContent = user.displayName || user.email;
                         loggedInHeader.classList.remove('hidden');
                         loggedOutHeader.classList.add('hidden');
                         shareCollectionBtn.classList.remove('hidden');
@@ -532,7 +606,7 @@
         });
     </script>
     
-    <div id="app-view" class="main-view">
+    <div id="app-view" class="hidden main-view">
         <div class="container mx-auto p-4 md:p-8">
             <header class="flex justify-between items-center mb-8 flex-wrap gap-4">
                 <div>
@@ -540,12 +614,9 @@
                     <p class="text-yellow-400 font-semibold mt-2 text-sm" style="font-family: 'Poppins', sans-serif;">Sua coleção Pokémon</p>
                 </div>
                 <div id="logged-in-header" class="hidden">
-                    <div class="flex items-center gap-4">
-                        <div class="text-right">
-                            <p id="user-email-display" class="text-sm text-gray-300" style="font-family: 'Poppins', sans-serif;"></p>
-                            <button id="logout-button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-3 rounded-lg transition-colors text-xs mt-1">Sair</button>
-                        </div>
-                        <button id="open-profile-modal-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors text-sm">Meu Perfil</button>
+                    <div class="text-right">
+                        <p id="user-email-display" class="text-sm text-gray-300" style="font-family: 'Poppins', sans-serif;"></p>
+                        <button id="logout-button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition-colors text-sm mt-1">Sair</button>
                     </div>
                 </div>
                 <div id="logged-out-header">
@@ -554,24 +625,47 @@
             </header>
 
             <main class="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                <section class="glass-panel">
+                <section>
                     <h2 class="text-2xl font-bold mb-4 border-b-2 border-yellow-500 pb-2">Buscar Cartas</h2>
                     
+                    <div class="mb-4" style="font-family: 'Poppins', sans-serif;">
+                        <span class="font-semibold mr-4">Procurar por:</span>
+                        <div class="inline-flex items-center gap-4">
+                            <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="search-type" value="card" class="w-4 h-4" checked><span>Carta</span></label>
+                            <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="search-type" value="set" class="w-4 h-4"><span>Edição</span></label>
+                        </div>
+                    </div>
+
                     <div class="flex gap-2 mb-6">
-                        <input type="text" id="search-input" placeholder="Ex: Charizard, Pikachu, etc." class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none" style="font-family: 'Poppins', sans-serif;">
-                        <button id="search-button" class="bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold py-2 px-6 rounded-lg">Buscar</button>
+                        <div id="search-input-container" class="w-full">
+                            <input type="text" id="search-input" placeholder="Nome da carta ou 58/165" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none" style="font-family: 'Poppins', sans-serif;">
+                        </div>
+                        <div id="set-select-container" class="w-full hidden">
+                             <select id="set-select" class="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none" style="font-family: 'Poppins', sans-serif;">
+                                <option>Carregando edições...</option>
+                             </select>
+                        </div>
+                        <button id="search-button" class="bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold py-2 px-6 rounded-lg transition-colors" style="font-family: 'Poppins', sans-serif;">Buscar</button>
                     </div>
 
                     <div id="loader" class="loader mx-auto hidden"></div>
                     <div id="search-results" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4"></div>
                 </section>
-                <section id="my-collection-section" class="glass-panel">
+                <section id="my-collection-section">
                     <div class="flex justify-between items-center mb-4 border-b-2 border-blue-500 pb-2 flex-wrap gap-4">
                         <h2 class="text-2xl font-bold">Minha Coleção</h2>
                         <div class="text-right" style="font-family: 'Poppins', sans-serif;"><p class="font-bold text-lg text-yellow-400">R$ <span id="collection-value">0,00</span></p><p class="font-semibold text-sm"><span id="collection-count">0</span> Cartas (<span id="unique-collection-count">0</span> Únicas)</p></div>
                     </div>
-                    
-                    <div id="collection-prompt" class="text-center p-8 bg-gray-800/50 rounded-lg">
+
+                    <div id="overall-progress-section" class="mb-6 hidden">
+                        <h3 class="text-lg font-bold mb-2 text-center" style="font-family: 'Poppins', sans-serif;">Progresso da Pokédex Nacional</h3>
+                        <div class="progress-bar-container">
+                            <div id="pokedex-progress-fill" class="progress-bar-fill"></div>
+                            <span id="pokedex-progress-text" class="progress-bar-text">0/1025</span>
+                        </div>
+                    </div>
+
+                    <div id="collection-prompt" class="text-center p-8 bg-gray-800 rounded-lg">
                         <p class="text-gray-400">Faça login para ver e gerir a sua coleção.</p>
                     </div>
 
@@ -584,23 +678,26 @@
                                 <option value="value">Valor</option>
                             </select>
                         </div>
-                        <button id="share-collection-btn" class="hidden bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg">
+                        <button id="share-collection-btn" class="hidden bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors text-sm">
                             Compartilhar
                         </button>
                     </div>
                     <div id="collection-loader" class="loader mx-auto hidden"></div>
-                    <div id="my-collection" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-h-[70vh] overflow-y-auto pr-2"></div>
+                    <div id="my-collection" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-h-[60vh] overflow-y-auto pr-2"></div>
                 </section>
             </main>
         </div>
         <footer class="text-center p-6 mt-8 border-t border-gray-700 text-xs" style="font-family: 'Poppins', sans-serif;"><p class="text-sm text-gray-300">Criado com ❤️ por um Mestre Pokémon.</p><p class="text-gray-400 mt-2">Dados de cartas e imagens via <a href="https://pokemontcg.io/" target="_blank" rel="noopener noreferrer" class="underline hover:text-yellow-300">pokemontcg.io</a>.</p><p class="text-gray-500 mt-2">*Os valores em Reais (R$) são estimativas baseadas nos preços de mercado do TCGplayer (USD) e convertidos usando uma taxa de câmbio atualizada diariamente. Os valores servem apenas como referência.</p></footer>
     </div>
     
-    <div id="auth-modal" class="modal-overlay"><div class="modal-content glass-panel"><div class="flex justify-between items-center mb-6"><h2 class="text-xl">Acesso</h2><button id="auth-modal-close-btn" class="text-4xl font-bold text-gray-400 hover:text-white">&times;</button></div><div id="login-tab"><h3 class="text-lg text-center mb-4">Login com E-mail</h3><form id="login-form" class="space-y-4" style="font-family: 'Poppins', sans-serif;"><input class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2" name="email" type="email" placeholder="Email" required><input class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2" name="password" type="password" placeholder="Senha" required><button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg">Entrar</button></form><p class="text-center text-sm text-gray-400 mt-4">Não tem conta? <button id="show-register-btn" class="text-yellow-400 hover:underline">Crie uma.</button></p></div><div id="register-tab" class="hidden"><h3 class="text-lg text-center mb-4">Criar Conta</h3><form id="register-form" class="space-y-4" style="font-family: 'Poppins', sans-serif;"><input class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2" name="email" type="email" placeholder="Email" required><input class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2" name="password" type="password" placeholder="Senha" required><p class="text-xs text-gray-400 -mt-2 pl-1">Mínimo 6 caracteres, com uma letra maiúscula e uma minúscula.</p><input class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2" name="confirm-password" type="password" placeholder="Confirmar Senha" required><button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg">Criar Conta</button></form><p class="text-center text-sm text-gray-400 mt-4">Já tem conta? <button id="show-login-btn" class="text-yellow-400 hover:underline">Faça login.</button></p></div></div></div>
-    <div id="add-card-modal" class="modal-overlay"><div class="modal-content glass-panel"><div class="flex justify-between items-center mb-6"><h2 class="text-xl">Adicionar à Coleção</h2><button id="add-card-modal-close-btn" class="text-4xl font-bold text-gray-400 hover:text-white">&times;</button></div><div class="flex flex-col sm:flex-row gap-4"><img id="modal-card-image" src="" alt="Imagem da carta" class="w-full sm:w-1/3 rounded-lg"><form id="add-card-form" class="flex-grow flex flex-col" style="font-family: 'Poppins', sans-serif;"><h3 id="modal-card-name" class="text-xl font-bold"></h3><div id="modal-card-set-info" class="text-sm text-gray-400 mb-4"></div><div class="mb-4"><label for="quality" class="block font-semibold mb-2">Qualidade:</label><select name="quality" id="quality" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2"><option value="Nova">Nova (Mint/NM)</option><option value="Pouco Usada">Pouco Usada (LP)</option><option value="Usada">Usada (Played)</option></select></div><p id="modal-price-display" class="text-lg font-bold text-yellow-400 mb-6">Valor: R$ 0,00</p><button type="submit" class="mt-auto w-full bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold py-3 px-4 rounded-lg">Confirmar</button></form></div></div></div>
-    <div id="details-modal" class="modal-overlay"><div class="modal-content glass-panel"><div class="flex justify-between items-center mb-6"><h2 class="text-2xl">Detalhes da Carta</h2><button id="details-modal-close-btn" class="text-4xl font-bold text-gray-400 hover:text-white">&times;</button></div><div class="flex flex-col sm:flex-row gap-6"><img id="details-card-image" src="" alt="Imagem da carta" class="w-full sm:w-1/3 rounded-lg"><div class="flex-grow" style="font-family: 'Poppins', sans-serif;"><h3 id="details-card-name" class="text-2xl font-bold mb-2"></h3><div id="details-card-set-info" class="mb-4"></div><div class="mb-4"><p class="font-semibold">Qualidade:</p><p id="details-card-quality" class="text-lg text-blue-300"></p></div><div><p class="font-semibold">Valor Registado:</p><p id="details-card-price" class="text-lg font-bold text-yellow-400"></p><p class="text-xs text-gray-400 mt-2 italic">*Valor em R$ é uma estimativa baseada na cotação do dólar e preços do TCGplayer (EUA).</p></div></div></div></div></div>
-    <div id="profile-modal" class="modal-overlay"><div class="modal-content glass-panel"><div class="flex justify-between items-center mb-6"><h2 class="text-xl">Gerenciar Perfil</h2><button id="profile-modal-close-btn" class="text-4xl font-bold text-gray-400 hover:text-white">&times;</button></div><form id="profile-form" style="font-family: 'Poppins', sans-serif;"><div class="mb-4"><label for="profile-name" class="block font-semibold mb-1">Nome / Apelido</label><input type="text" id="profile-name" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2" required></div><div class="mb-4"><label for="profile-social" class="block font-semibold mb-1">Rede Social (opcional)</label><input type="url" id="profile-social" placeholder="https://..." class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2"></div><button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg">Salvar Alterações</button><p id="profile-feedback" class="text-center mt-4 h-5"></p></form></div></div>
-    <div id="share-modal" class="modal-overlay"><div class="modal-content glass-panel"><div class="flex justify-between items-center mb-4"><h2 class="text-xl">Compartilhar Coleção</h2><button id="share-modal-close-btn" class="text-4xl font-bold text-gray-400 hover:text-white">&times;</button></div><p class="text-gray-400 mb-6">Use o link abaixo para compartilhar uma visão pública da sua coleção com outros treinadores!</p><div class="mb-6"><label for="public-toggle" class="flex items-center cursor-pointer"><div class="relative"><input type="checkbox" id="public-toggle" class="sr-only"><div class="block bg-gray-600 w-14 h-8 rounded-full"></div><div class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition"></div></div><div id="public-status-text" class="ml-3 text-white font-medium">Minha coleção é Privada</div></label></div><div><label for="shareable-link" class="block text-sm font-medium text-gray-300 mb-1">Seu link público:</label><div class="flex"><input type="text" id="shareable-link" readonly class="w-full bg-gray-800 border border-gray-600 rounded-l-lg px-3 py-2 text-gray-400"><button id="copy-link-btn" class="bg-yellow-500 text-gray-900 font-bold px-4 rounded-r-lg hover:bg-yellow-600">Copiar</button></div><p id="copy-feedback" class="text-green-400 text-sm mt-2 h-4"></p></div></div></div>
+    <div id="auth-modal" class="modal-overlay"><div class="modal-content" style="max-width: 450px;"><div class="flex justify-between items-center mb-6"><h2 class="text-xl">Acesso</h2><button id="auth-modal-close-btn" class="text-4xl font-bold text-gray-400 hover:text-white transition-colors">&times;</button></div><div id="login-tab"><h3 class="text-lg text-center mb-4">Login com E-mail</h3><form id="login-form" class="space-y-4" style="font-family: 'Poppins', sans-serif;"><input class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2" name="email" type="email" placeholder="Email" required><input class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2" name="password" type="password" placeholder="Senha" required><button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg">Entrar</button></form><p class="text-center text-sm text-gray-400 mt-4">Não tem conta? <button id="show-register-btn" class="text-yellow-400 hover:underline">Crie uma.</button></p></div><div id="register-tab" class="hidden"><h3 class="text-lg text-center mb-4">Criar Conta</h3><form id="register-form" class="space-y-4" style="font-family: 'Poppins', sans-serif;"><input class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2" name="email" type="email" placeholder="Email" required><input class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2" name="password" type="password" placeholder="Senha (mín. 6 caracteres)" required><input class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2" name="confirm-password" type="password" placeholder="Confirmar Senha" required><button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg">Criar Conta</button></form><p class="text-center text-sm text-gray-400 mt-4">Já tem conta? <button id="show-login-btn" class="text-yellow-400 hover:underline">Faça login.</button></p></div></div></div>
+    <div id="add-card-modal" class="modal-overlay"><div class="modal-content" style="max-width: 450px;"><div class="flex justify-between items-center mb-6"><h2 class="text-xl">Adicionar à Coleção</h2><button id="add-card-modal-close-btn" class="text-4xl font-bold text-gray-400 hover:text-white transition-colors">&times;</button></div><div class="flex flex-col sm:flex-row gap-4"><img id="modal-card-image" src="" alt="Imagem da carta" class="w-full sm:w-1/3 rounded-lg"><form id="add-card-form" class="flex-grow flex flex-col" style="font-family: 'Poppins', sans-serif;"><h3 id="modal-card-name" class="text-xl font-bold"></h3><div id="modal-card-set-info" class="text-sm text-gray-400 mb-4"></div><div class="mb-4"><label for="quality" class="block mb-2 font-semibold">Qualidade:</label><select name="quality" id="quality" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2"><option value="Nova">Nova (Mint/NM)</option><option value="Pouco Usada">Pouco Usada (LP)</option><option value="Usada">Usada (Played)</option></select></div><div class="mb-4"><label for="finish" class="block mb-2 font-semibold">Acabamento:</label><select name="finish" id="finish" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2"></select></div><p id="modal-price-display" class="text-lg font-bold text-yellow-400 mb-6">Valor: R$ 0,00</p><button type="submit" class="mt-auto w-full bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold py-3 px-4 rounded-lg transition-colors">Confirmar</button></form></div></div></div>
+    
+    <div id="details-modal" class="modal-overlay"><div class="modal-content"><div class="flex justify-between items-center mb-6"><h2 class="text-2xl">Detalhes da Carta</h2><button id="details-modal-close-btn" class="text-4xl font-bold text-gray-400 hover:text-white transition-colors">&times;</button></div><div class="flex flex-col sm:flex-row gap-6"><img id="details-card-image" src="" alt="Imagem da carta" class="w-full sm:w-1/3 rounded-lg"><div class="flex-grow" style="font-family: 'Poppins', sans-serif;"><h3 id="details-card-name" class="text-2xl font-bold mb-2"></h3><div id="details-card-set-info" class="mb-4"></div><div class="mb-4"><p class="font-semibold">Qualidade:</p><p id="details-card-quality" class="text-lg text-blue-300"></p></div><div class="mb-4"><p class="font-semibold">Acabamento:</p><p id="details-card-finish" class="text-lg text-cyan-300"></p></div><div><p class="font-semibold">Valor Registado:</p><p id="details-card-price" class="text-lg font-bold text-yellow-400"></p><p class="text-xs text-gray-400 mt-2 italic">*Valor em R$ é uma estimativa baseada na cotação do dólar e preços do TCGplayer (EUA).</p></div></div></div></div></div>
+    
+    <div id="profile-modal" class="modal-overlay"><div class="modal-content" style="max-width: 500px;"><div class="flex justify-between items-center mb-6"><h2 class="text-xl">Gerenciar Perfil</h2><button id="profile-modal-close-btn" class="text-4xl font-bold text-gray-400 hover:text-white">&times;</button></div><form id="profile-form" style="font-family: 'Poppins', sans-serif;"><div class="mb-4"><label for="profile-name" class="block font-semibold mb-1">Nome / Nickname</label><input type="text" id="profile-name" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2" required></div><div class="mb-4"><label for="profile-social" class="block font-semibold mb-1">Rede Social (opcional)</label><input type="url" id="profile-social" placeholder="https://..." class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2"></div><button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg">Salvar Alterações</button><p id="profile-feedback" class="text-center mt-4 h-5"></p></form></div></div>
+    
+    <div id="share-modal" class="modal-overlay"><div class="modal-content" style="max-width: 500px; font-family: 'Poppins', sans-serif;"><div class="flex justify-between items-center mb-4"><h2 class="text-xl" style="font-family: 'Press Start 2P', cursive;">Compartilhar Coleção</h2><button id="share-modal-close-btn" class="text-4xl font-bold text-gray-400 hover:text-white">&times;</button></div><p class="text-gray-400 mb-6">Use o link abaixo para compartilhar uma visão pública da sua coleção com outros treinadores!</p><div class="mb-6"><label for="public-toggle" class="flex items-center cursor-pointer"><div class="relative"><input type="checkbox" id="public-toggle" class="sr-only"><div class="block bg-gray-600 w-14 h-8 rounded-full"></div><div class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition" style="transform: translateX(0); background-color: white;"></div></div><div id="public-status-text" class="ml-3 text-white font-medium">Minha coleção é Privada</div></label></div><div><label for="shareable-link" class="block text-sm font-medium text-gray-300 mb-1">Seu link público:</label><div class="flex"><input type="text" id="shareable-link" readonly class="w-full bg-gray-800 border border-gray-600 rounded-l-lg px-3 py-2 text-gray-400"><button id="copy-link-btn" class="bg-yellow-500 text-gray-900 font-bold px-4 rounded-r-lg hover:bg-yellow-600">Copiar</button></div><p id="copy-feedback" class="text-green-400 text-sm mt-2 h-4"></p></div></div></div>
 
 </body>
 </html>
