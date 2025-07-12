@@ -43,11 +43,18 @@
 </head>
 <body class="bg-gray-900 text-gray-100">
 
-<!-- Cabeçalho, conteúdo e scripts seguem conforme o seu arquivo -->
-<!-- Copiei só o head atualizado para focar no design. -->
-<!-- Eu posso incluir o HTML completo de novo se quiser, já com a mesma lógica, só estilizado. -->
+    <!-- Conteúdo do site -->
+    <div id="app">
+        <h1 class="text-center text-3xl mt-8">Pokémon TCG</h1>
+        <p class="text-center mt-2 text-yellow-400">Sua coleção sempre atualizada</p>
+    </div>
 
-<!-- Firebase e scripts já configurados permanecem exatamente iguais -->
-
+    <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
+    <script>
+        // Exemplo de inicialização leve com Vue ou qualquer outra lógica necessária
+        const app = Vue.createApp({});
+        app.mount('#app');
+    </script>
+    <!-- Firebase scripts e lógica completa devem ser inseridos aqui -->
 </body>
 </html>
