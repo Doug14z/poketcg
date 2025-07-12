@@ -153,15 +153,25 @@
 
         function createMissingCardElement(card) {
                 const cardElement = document.createElement('div');
-                // Estilo para indicar que a carta está faltando (opacidade e borda diferente)
-                cardElement.className = "bg-gray-900 border border-gray-700 p-3 rounded-lg flex flex-col items-center text-center opacity-70";
+                // Mantemos uma opacidade menor para diferenciar visualmente que é uma carta faltante
+                cardElement.className = "bg-gray-800 p-3 rounded-lg flex flex-col items-center text-center collection-card opacity-70";
                 
-                const setInfoHTML = card.set ? `<div class="text-xs text-gray-400 flex items-center justify-center gap-1.5 mt-1"><span>${card.set.name}</span></div>` : '';
-
+                // Construindo as informações da Edição (Set)
+                let setInfoHTML = '';
+                if(card.set && card.set.name && card.number) {
+                    const symbolUrl = (card.set.images && card.set.images.symbol) ? card.set.images.symbol : '';
+                    const symbolImg = symbolUrl ? `<img src="${symbolUrl}" class="h-4" alt="Set Symbol">` : '';
+                    setInfoHTML = `<div class="text-xs text-gray-400 flex items-center justify-center gap-1.5 mt-1"><span>${card.set.name}</span> ${symbolImg} <span>#${card.number}</span></div>`;
+                }
+                
                 cardElement.innerHTML = `
-                    <img src="${card.images.small}" alt="${card.name}" class="rounded w-full mb-2">
-                    <p class="font-bold text-sm text-gray-300">${card.name}</p>
-                    <div class="text-xs text-gray-500 mt-1">#${card.number}</div>
+                    <img src="${card.images.large}" alt="${card.name}" class="rounded w-full mb-2 card-image-zoom">
+                    <p class="font-bold text-sm">${card.name}</p>
+                    ${setInfoHTML}
+                    <div class="mt-auto pt-2 text-center">
+                        <p class="text-sm text-gray-500 font-bold">Não Adquirido</p>
+                        <span class="font-bold text-lg">0x</span>
+                    </div>
                 `;
                 return cardElement;
             }
