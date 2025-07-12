@@ -14,7 +14,53 @@
             font-family: 'Poppins', sans-serif; 
             background-color: #111827; 
             color: #f3f4f6; 
+            transition: background-color 0.3s ease; /* Transição de cor de fundo */
         }
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Press Start 2P', cursive;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.6); /* Sombra para melhorar a visibilidade */
+        }
+        .card-item:hover { 
+            transform: scale(1.05); 
+            transition: transform 0.2s ease; /* Efeito de zoom suave */
+        }
+
+        button:hover {
+            background-color: #f59e0b; 
+            transition: background-color 0.3s ease; /* Alteração suave na cor do botão */
+        }
+
+        input:focus {
+            border-color: #f59e0b; /* Melhor destaque nos campos de entrada */
+            transition: border-color 0.3s ease;
+        }
+
+        /* Melhorando o visual dos modais */
+        .modal-overlay {
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.show {
+            opacity: 1; /* Animação de transição suave no modal */
+        }
+
+        .group-header {
+            font-weight: bold;
+            font-size: 1.2rem; 
+            color: #d1d5db;
+        }
+
+        /* Melhorando a aparência das cartas */
+        .card-item {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); /* Sombras para destacar as cartas */
+            transition: box-shadow 0.3s ease;
+        }
+
+        .card-item:hover {
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3); /* Efeito de hover nas cartas */
+        }
+    </style>
         h1, h2, h3, h4, h5, h6 {
             font-family: 'Press Start 2P', cursive;
         }
