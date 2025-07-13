@@ -79,9 +79,10 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot, collection, deleteDoc, updateDoc, increment, getDoc } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
 
+        
         document.addEventListener('DOMContentLoaded', async () => {
             const authModal = document.getElementById('auth-modal');
             const authModalCloseBtn = document.getElementById('auth-modal-close-btn');
@@ -123,7 +124,74 @@
             const publicToggle = document.getElementById('public-toggle');
             const publicStatusText = document.getElementById('public-status-text');
             const copyFeedback = document.getElementById('copy-feedback');
+            // ... (logo após a declaração da const `copyFeedback`)
 
+            // NOVO: Seletores para o Modal de Perfil
+            const profileModal = document.getElementById('profile-modal');
+            const profileModalCloseBtn = document.getElementById('profile-modal-close-btn');
+            const profileButton = document.getElementById('profile-button');
+            const profileForm = document.getElementById('profile-form');
+            const profileNameInput = document.getElementById('profile-name');
+            const profileFeedback = document.getElementById('profile-feedback');
+            
+            // NOVO: Lógica para abrir o modal de perfil
+            profileButton.addEventListener('click', () => {
+                // Preenche o campo com o nome de usuário atual antes de abrir
+                if (auth.currentUser) {
+                    profileNameInput.value = auth.currentUser.displayName || '';
+                    profileFeedback.textContent = ''; // Limpa feedback anterior
+                    profileModal.style.display = 'flex';
+                }
+            });
+
+            // NOVO: Lógica para fechar o modal de perfil
+            profileModalCloseBtn.addEventListener('click', () => {
+                profileModal.style.display = 'none';
+            });
+
+            // NOVO: Lógica para salvar o nickname
+            profileForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const newName = profileNameInput.value.trim();
+
+                if (!newName) {
+                    profileFeedback.textContent = 'O nickname não pode ficar em branco.';
+                    profileFeedback.classList.add('text-red-400');
+                    return;
+                }
+                
+                if (!auth.currentUser) return;
+
+                profileFeedback.textContent = 'Salvando...';
+                profileFeedback.classList.remove('text-red-400', 'text-green-400');
+
+                try {
+                    // 1. Atualiza o perfil do Firebase Auth (para logins futuros e uso no app)
+                    await updateProfile(auth.currentUser, { displayName: newName });
+                    
+                    // 2. Atualiza o nome no perfil público do Firestore (para a página de compartilhamento)
+                    const profileRef = doc(db, 'public_profiles', auth.currentUser.uid);
+                    await setDoc(profileRef, { ownerName: newName }, { merge: true });
+
+                    // 3. Atualiza a UI imediatamente
+                    userEmailDisplay.textContent = newName;
+                    profileFeedback.textContent = 'Perfil atualizado com sucesso!';
+                    profileFeedback.classList.add('text-green-400');
+
+                    setTimeout(() => {
+                        profileModal.style.display = 'none';
+                    }, 1500);
+
+                } catch (error) {
+                    console.error("Erro ao atualizar perfil:", error);
+                    profileFeedback.textContent = 'Erro ao salvar. Tente novamente.';
+                    profileFeedback.classList.add('text-red-400');
+                }
+            });
+
+            // ... (aqui começa a função showView)
+
+            
             let currentUserId = null;
             let searchCache = new Map();
             let collectionData = new Map();
@@ -712,11 +780,15 @@
                     <p class="text-yellow-400 font-semibold mt-2 text-sm" style="font-family: 'Poppins', sans-serif;">Sua coleção Pokémon</p>
                 </div>
                 <div id="logged-in-header" class="hidden">
-                    <div class="text-right">
-                        <p id="user-email-display" class="text-sm text-gray-300" style="font-family: 'Poppins', sans-serif;"></p>
-                        <button id="logout-button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition-colors text-sm mt-1">Sair</button>
+                    <div class="flex items-center gap-4">
+                        <div class="text-right">
+                            <p id="user-email-display" class="text-sm text-gray-300 font-semibold" style="font-family: 'Poppins', sans-serif;"></p>
+                            <button id="profile-button" class="text-xs text-yellow-400 hover:underline">Editar Perfil</button>
+                        </div>
+                        <button id="logout-button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition-colors text-sm">Sair</button>
                     </div>
                 </div>
+                
                 <div id="logged-out-header">
                     <button id="open-auth-modal-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors" style="font-family: 'Poppins', sans-serif;">Login / Criar Conta</button>
                 </div>
