@@ -327,35 +327,24 @@
                 modalCardName.textContent = card.name;
                 const releaseYear = new Date(card.set.releaseDate).getFullYear();
                 modalCardSetInfo.innerHTML = `<span class="flex items-center gap-2">${card.set.name} <img src="${card.set.images.symbol}" class="h-5" alt="${card.set.name}"></span> ${releaseYear} &bull; #${String(card.number).padStart(3, '0')} / ${card.set.printedTotal}`;
-                
-                // LÓGICA ATUALIZADA PARA O SELETOR DE ACABAMENTO
                 finishSelect.innerHTML = '';
-                const prices = card.tcgplayer?.prices;
-                const availableFinishes = new Set();
-
-                // Adiciona os acabamentos que têm preço na API
-                if (prices) {
-                    for (const key in prices) {
-                        if (prices[key]) {
-                            availableFinishes.add(key);
+                if (card.tcgplayer && card.tcgplayer.prices) {
+                    for (const key in card.tcgplayer.prices) {
+                        if (card.tcgplayer.prices[key]) {
+                            const option = document.createElement('option');
+                            option.value = key;
+                            option.textContent = getFinishDisplayName(key);
+                            finishSelect.appendChild(option);
                         }
                     }
+                } else {
+                     const option = document.createElement('option');
+                     option.value = 'normal';
+                     option.textContent = 'Normal';
+                     finishSelect.appendChild(option);
                 }
-                // Garante que a opção "Normal" sempre exista
-                availableFinishes.add('normal');
-
-                // Cria e adiciona as opções ao select
-                availableFinishes.forEach(key => {
-                    const option = document.createElement('option');
-                    option.value = key;
-                    option.textContent = getFinishDisplayName(key);
-                    finishSelect.appendChild(option);
-                });
-
                 addCardForm.dataset.cardId = card.id;
                 addCardForm.reset();
-                // Garante que o idioma padrão seja Português
-                document.getElementById('language').value = 'BR';
                 updatePriceDisplay();
                 addCardModal.style.display = 'flex';
             };
@@ -650,17 +639,16 @@
             const updateShareUI = (isPublic) => {
                 const shareLinkAllInput = document.getElementById('shareable-link-all');
                 const shareLinkTradeInput = document.getElementById('shareable-link-trade');
-                const userNickname = auth.currentUser.displayName;
 
                 publicToggle.checked = isPublic;
-                if (isPublic && userNickname) {
+                if (isPublic) {
                     publicStatusText.textContent = "Minha coleção é Pública";
                     publicStatusText.classList.remove('text-white');
                     publicStatusText.classList.add('text-green-400');
                     
-                    const baseURL = `${window.location.origin}/${userNickname}`;
+                    const baseURL = `${window.location.origin}${window.location.pathname.replace('index.html', '')}share.html?user=${currentUserId}`;
                     shareLinkAllInput.value = baseURL;
-                    shareLinkTradeInput.value = `${baseURL}?list=trade`;
+                    shareLinkTradeInput.value = `${baseURL}&list=trade`;
 
                     shareLinkAllInput.classList.remove('text-gray-400');
                     shareLinkTradeInput.classList.remove('text-gray-400');
@@ -669,7 +657,7 @@
                     publicStatusText.classList.remove('text-green-400');
                     publicStatusText.classList.add('text-white');
                     
-                    const disabledText = 'Torne sua coleção pública e defina um nickname para gerar o link';
+                    const disabledText = 'Torne sua coleção pública para gerar o link';
                     shareLinkAllInput.value = disabledText;
                     shareLinkTradeInput.value = disabledText;
                     
