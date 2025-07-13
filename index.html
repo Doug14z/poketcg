@@ -80,7 +80,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot, collection, deleteDoc, updateDoc, increment, getDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, onSnapshot, collection, deleteDoc, updateDoc, increment, getDoc } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
 
         document.addEventListener('DOMContentLoaded', async () => {
             const authModal = document.getElementById('auth-modal');
@@ -176,13 +176,11 @@
                 profileFeedback.classList.remove('text-red-400', 'text-green-400');
 
                 try {
-                    // ** LÓGICA DE ATUALIZAÇÃO DO NICKNAME **
                     await updateProfile(auth.currentUser, { displayName: newName });
-                    
                     const profileRef = doc(db, 'public_profiles', auth.currentUser.uid);
                     await setDoc(profileRef, { 
                         ownerName: newName,
-                        ownerName_lowercase: newName.toLowerCase(), // Salva a versão em minúsculas
+                        ownerName_lowercase: newName.toLowerCase(),
                         socialLink: socialLink 
                     }, { merge: true });
 
@@ -383,6 +381,10 @@
                 if (card.tcgplayer && card.tcgplayer.prices) {
                     let priceData = card.tcgplayer.prices[finish];
                     
+                    if (!priceData && finish === 'normal') {
+                        priceData = card.tcgplayer.prices['unlimited'] || card.tcgplayer.prices['1stEditionNormal'];
+                    }
+
                     if (priceData) {
                         switch (quality) {
                             case 'Nova': priceUsd = priceData.market || priceData.mid || 0; break;
