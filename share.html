@@ -152,29 +152,29 @@
         //
 
         function createMissingCardElement(card) {
-                // --- CONFIGURAÇÃO DOS AFILIADOS ---
+                // --- CONFIGURAÇÃO FINAL DOS AFILIADOS ---
                 const affiliateConfig = {
                     mercadolivre: {
-                        baseUrl: 'https://lista.mercadolivre.com.br/'
+                        // COLE AQUI O SEU LINK COMPLETO E ESTÁTICO GERADO PELO MERCADO LIVRE
+                        staticLink: 'https://www.mercadolivre.com.br/social/doug14z?matt_word=doug14z&matt_tool=78732339&forceInApp=true&ref=BFyEx4ciPSpWXd94EmSqtJAeDYPSIGau87en%2B10HvqvjXtvmX6FL7%2BqgggdctPEYLn54kiXcIrKXTWKZnjriMI1MA9hBCyx9FD5WJ%2BnmkH29OMe5c%2BO0HWeqhuXTNS5c%2BrATm3r27irjC1U5plPaESvqr0jfS1%2BYn65EsCscziIeHVOy7fNZYKcD411wxH%2FC5XiDsF69dRwE1do0wqx02%2BXjy0Q2hXOKHoDO9zRHrpykCqEC0GgsGQE6vrxrgSxL%2B8JWY7XXn1kgPT%2FFStDz%2FU%2BpW8G%2FX5eLFFb2D6Cw9DscefMYPC14GkIAOKqJ86JkLAqh%2BO7dfGbvRRyuchkp1SPIBE6LWShiqdHjuV7sy1b8fiJg6e1%2BckjqQQsFqXGrsGSygfGunBlP4kjUtEBGUaDMiM%2FTJ2tSYlH6eiVg0ET7xG08nyXpovTuvmxQEJMFPSv%2FLAQVid4vpiqvJT6cyC3wU4XNvVqrFy2Tr%2BkSsqStdRPudPeU8ekBpNotD6%2By%2Fsen1GiyifxJ%2B6zZKfpi3mhyUq%2F%2FrEGpiZ%2FvvYE%3D'
                     },
                     amazon: {
-                        tag: 'tcgpokemon0b-20' // Substitua pelo seu ID da Amazon Associados
+                        tag: 'tcgpokemon0b-20' // Seu ID da Amazon
                     }
                 };
 
-                // --- PREPARA A BUSCA COM NUMERAÇÃO EXATA DE COLECIONADOR (NOME + NÚMERO) ---
+                // --- GERA O LINK DA AMAZON (DINÂMICO) ---
                 let searchString = card.name;
-
-                // Adiciona a numeração exata (ex: "008/182") se os dados existirem, para máxima precisão.
                 if (card.number && card.set && card.set.printedTotal) {
                     const paddedNumber = String(card.number).padStart(3, '0');
                     searchString += ` (${paddedNumber}/${card.set.printedTotal})`;
                 }
-
-                // Links para cada plataforma com a busca ultra específica
-                const mercadoLivreLink = `${affiliateConfig.mercadolivre.baseUrl}${encodeURIComponent(`${searchString} Pokémon`)}`;
-                const amazonLink = `https://www.amazon.com.br/s?k=${encodeURIComponent(`${searchString} Pokémon TCG`)}&tag=${affiliateConfig.amazon.tag}`;
+                const amazonSearch = encodeURIComponent(`${searchString} Pokémon TCG`);
+                const amazonLink = `https://www.amazon.com.br/s?k=${amazonSearch}&tag=${affiliateConfig.amazon.tag}`;
                 
+                // --- USA O LINK DO MERCADO LIVRE (ESTÁTICO) ---
+                const mercadoLivreLink = affiliateConfig.mercadolivre.staticLink;
+
                 // Cria o elemento DIV que conterá o card
                 const cardElement = document.createElement('div');
                 cardElement.className = "bg-gray-800 p-3 rounded-lg flex flex-col items-center text-center collection-card";
