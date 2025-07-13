@@ -156,8 +156,6 @@
                 // Insira seus IDs de afiliado para AMBAS as plataformas abaixo.
                 const affiliateConfig = {
                     mercadolivre: {
-                        // Para o Mercado Livre, use a URL de busca. A monetização exata
-                        // pode depender das ferramentas que eles fornecem no portal de afiliados.
                         baseUrl: 'https://lista.mercadolivre.com.br/'
                     },
                     amazon: {
@@ -165,14 +163,18 @@
                     }
                 };
 
-                // Prepara o nome do card para as URLs de busca
-                const encodedCardName = encodeURIComponent(`${card.name} Carta Pokémon TCG`);
+                // --- PREPARA A BUSCA SUPER ESPECÍFICA (COM NOME E EDIÇÃO) ---
+                let searchString = card.name;
+                // Adiciona o nome da edição (set) à busca, se ele existir, para máxima precisão.
+                if (card.set && card.set.name) {
+                    searchString += ` ${card.set.name}`;
+                }
 
-                // --- GERA OS DOIS LINKS DE AFILIADO ---
-                const mercadoLivreLink = `${affiliateConfig.mercadolivre.baseUrl}${encodedCardName}`;
-                const amazonLink = `https://www.amazon.com.br/s?k=${encodedCardName}&tag=${affiliateConfig.amazon.tag}`;
+                // Links para cada plataforma com a busca ultra específica
+                const mercadoLivreLink = `${affiliateConfig.mercadolivre.baseUrl}${encodeURIComponent(`${searchString} Carta Pokémon`)}`;
+                const amazonLink = `https://www.amazon.com.br/s?k=${encodeURIComponent(`${searchString} Pokémon TCG`)}&tag=${affiliateConfig.amazon.tag}`;
 
-                // Cria o elemento DIV que conterá o card (não será mais um link único)
+                // Cria o elemento DIV que conterá o card
                 const cardElement = document.createElement('div');
                 cardElement.className = "bg-gray-800 p-3 rounded-lg flex flex-col items-center text-center collection-card";
                 
@@ -183,7 +185,7 @@
                     setInfoHTML = `<div class="text-xs text-gray-400 flex items-center justify-center gap-1.5 mt-1"><span>${card.set.name}</span> ${symbolImg} <span>#${card.number}</span></div>`;
                 }
                 
-                // Note que o HTML agora tem dois botões <a> separados na parte de baixo
+                // O HTML com os dois botões, que agora levarão a buscas muito mais precisas
                 cardElement.innerHTML = `
                     <img src="${card.images.large}" alt="${card.name}" class="rounded w-full mb-2 card-image-zoom">
                     <p class="font-bold text-sm text-white">${card.name}</p>
