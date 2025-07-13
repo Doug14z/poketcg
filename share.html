@@ -81,7 +81,7 @@
 
             <div id="loader" class="loader mx-auto"></div>
             <div id="error-message" class="hidden text-center text-red-400"></div>
-            <div id="public-collection" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4"></div>
+            <div id="public-collection"></div>
         </main>
         
         <footer class="text-center p-6 mt-8 border-t border-gray-700 text-xs" style="font-family: 'Poppins', sans-serif;">
@@ -134,26 +134,50 @@
             const stackModalCloseBtn = document.getElementById('stack-modal-close-btn');
             
             let publicCollectionData = [];
-            const params = new URLSearchParams(window.location.search);
-            const userId = params.get('user');
-            const listType = params.get('list');
-
-            if (!userId) { showError("Nenhum utilizador especificado."); return; }
-
+            
+            // LÓGICA ATUALIZADA PARA LER A URL
             try {
-                const profileRef = doc(db, 'public_profiles', userId);
-                const profileSnap = await getDoc(profileRef);
+                const params = new URLSearchParams(window.location.search);
+                const listType = params.get('list');
+                let userId = params.get('user');
+                let userDocSnap;
 
-                if (!profileSnap.exists() || !profileSnap.data().isPublic) {
+                // Se não encontrou 'user' como parâmetro, tenta pegar o nickname da URL
+                if (!userId) {
+                    const pathParts = window.location.pathname.split('/').filter(part => part && part.toLowerCase() !== 'share.html');
+                    const nickname = pathParts[0];
+
+                    if (nickname) {
+                        const profilesRef = collection(db, "public_profiles");
+                        const q = query(profilesRef, where("ownerName", "==", nickname));
+                        const querySnapshot = await getDocs(q);
+                        if (!querySnapshot.empty) {
+                            userDocSnap = querySnapshot.docs[0];
+                            userId = userDocSnap.id; 
+                        }
+                    }
+                }
+
+                if (!userId) {
+                    showError("Nenhum colecionador especificado.");
+                    return;
+                }
+
+                if (!userDocSnap) {
+                    const profileRef = doc(db, 'public_profiles', userId);
+                    userDocSnap = await getDoc(profileRef);
+                }
+
+                if (!userDocSnap.exists() || !userDocSnap.data().isPublic) {
                     showError("Esta coleção é privada ou não existe.");
                     return;
                 }
 
-                const ownerName = profileSnap.data().ownerName || 'um Treinador';
+                const ownerName = userDocSnap.data().ownerName || 'um Treinador';
                 title.textContent = `Coleção de ${ownerName}`;
                 subtitle.textContent = listType === 'trade' ? "Itens para Troca / Venda" : "Coleção Completa";
 
-                const socialLink = profileSnap.data().socialLink;
+                const socialLink = userDocSnap.data().socialLink;
                 if (socialLink) {
                     const contactContainer = document.getElementById('contact-container');
                     const contactButton = document.createElement('a');
@@ -212,7 +236,7 @@
                 pokedexProgressFill.style.width = `${pokedexPercentage}%`;
                 if (pokedexPercentage < 30) { pokedexProgressFill.style.background = 'linear-gradient(to right, #ef4444, #f87171)'; } 
                 else if (pokedexPercentage < 60) { pokedexProgressFill.style.background = 'linear-gradient(to right, #f59e0b, #facc15)'; } 
-                else { pokedexProgressFill.style.background = 'linear-gradient(to right, #22c55e, #4ade80)'; }
+else { pokedexProgressFill.style.background = 'linear-gradient(to right, #22c55e, #4ade80)'; }
                 pokedexProgressText.textContent = `${uniquePokemonOwned} / ${TOTAL_POKEMON}`;
                 statsContainer.classList.remove('hidden');
             }
@@ -413,15 +437,7 @@
             
             function createPokedexStackElement(cardsInStack) {
                 const representativeCard = cardsInStack[0];
-                const cardElement = createCardElement(representativeCard, 'pokedex');
-                if (cardsInStack.length > 1) {
-                    const badge = document.createElement('div');
-                    badge.className = 'stack-badge';
-                    badge.textContent = `${cardsInStack.length} Versões`;
-                    cardElement.appendChild(badge);
-                    cardElement.classList.add('cursor-pointer');
-                    cardElement.addEventListener('click', () => openPokedexStackModal(cardsInStack));
-                }
+                const cardElement = createCardElement(representativeCard, 'pokedex', cardsInStack);
                 return cardElement;
             }
 
@@ -443,11 +459,14 @@
                 title.textContent = "Erro";
             }
             
-            // FUNÇÃO ATUALIZADA PARA INCLUIR AS TAGS DE VERSÃO
-            function createCardElement(card, groupBy) {
+            function createCardElement(card, groupBy, versions = [card]) {
                 const cardElement = document.createElement('div');
                 cardElement.className = "bg-gray-800 p-3 rounded-lg flex flex-col items-center text-center collection-card";
-                
+                if(versions.length > 1) {
+                    cardElement.classList.add('cursor-pointer');
+                    cardElement.addEventListener('click', () => openPokedexStackModal(versions));
+                }
+
                 const qualityClasses = { 'Nova': 'bg-green-600 text-white', 'Pouco Usada': 'bg-yellow-500 text-gray-900', 'Usada': 'bg-red-600 text-white' };
                 const qualityClass = qualityClasses[card.quality] || 'bg-gray-500';
                 
@@ -463,7 +482,6 @@
                     setInfoHTML = `<div class="text-xs text-gray-400 flex items-center justify-center gap-1.5 mt-1"><span>${card.set.name}</span> ${symbolImg} <span>#${String(card.number).padStart(3, '0')}</span></div>`;
                 }
 
-                // TAGS DE QUALIDADE, ACABAMENTO E IDIOMA
                 const tagsHTML = `
                     <div class="flex flex-wrap items-center justify-center gap-1 my-2">
                        <div class="text-xs font-semibold px-2 py-0.5 rounded-full ${qualityClass}">${card.quality || 'N/A'}</div>
@@ -476,8 +494,10 @@
                 const quantityToShow = card[quantityKey] || 0;
                 
                 cardElement.innerHTML = `
-                    ${pokedexInfo}
-                    <img src="${card.image || card.images.small}" alt="${card.name}" class="rounded w-full mb-2 aspect-[5/7] object-cover">
+                    <div class="relative w-full">
+                        <img src="${card.image || card.images.small}" alt="${card.name}" class="rounded w-full mb-2 aspect-[5/7] object-cover">
+                        ${versions.length > 1 ? `<div class="stack-badge">${versions.length} Versões</div>` : ''}
+                    </div>
                     <p class="font-bold text-sm">${card.name}</p>
                     ${setInfoHTML}
                     ${tagsHTML}
