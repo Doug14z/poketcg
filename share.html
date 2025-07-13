@@ -19,8 +19,6 @@
         .modal-content { background-color: #1f2937; padding: 1.5rem; border-radius: 16px; width: 90%; max-width: 1200px; max-height: 90vh; box-shadow: 0 10px 25px rgba(0,0,0,0.2); border: 1px solid #374151; display: flex; flex-direction: column; }
 
         .collection-card { position: relative; }
-        .card-image-zoom { transition: transform 0.2s ease-in-out; }
-        .collection-card:hover .card-image-zoom { transform: scale(1.1); z-index: 50; }
         
         .group-header-wrapper { background-color: #374151; padding: 0.75rem 1rem; border-radius: 8px; margin-top: 1rem; cursor: pointer; transition: background-color 0.2s; }
         .group-header-wrapper:hover { background-color: #4b5563; }
@@ -216,6 +214,7 @@
                 statsContainer.classList.remove('hidden');
             }
             
+            // FUNÇÃO RESTAURADA COM TODAS AS VISUALIZAÇÕES
             function renderPublicCollection() {
                 collectionContainer.innerHTML = '';
                 const groupBy = groupBySelect.value;
@@ -274,13 +273,64 @@
                         progressBarText.textContent = `${Math.round(percentage)}%`;
 
                         const collapsibleContent = document.createElement('div');
-                        collapsibleContent.className = "mt-4 hidden grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4"; 
+                        collapsibleContent.className = "mt-4 hidden";
                         
+                        const ownedGrid = document.createElement('div');
+                        ownedGrid.className = "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4";
                         cardsInGroup.sort((a,b) => (parseInt(String(a.number).replace(/[^0-9]/g, '')) || 0) - (parseInt(String(b.number).replace(/[^0-9]/g, '')) || 0))
-                            .forEach(card => collapsibleContent.appendChild(createCardElement(card, 'edition')));
+                            .forEach(card => ownedGrid.appendChild(createCardElement(card, 'edition')));
                         
-                        headerWrapper.addEventListener('click', () => {
+                        collapsibleContent.appendChild(ownedGrid);
+                        
+                        let hasLoadedMissing = false;
+                        headerWrapper.addEventListener('click', async () => {
                             collapsibleContent.classList.toggle('hidden');
+
+                            if (!collapsibleContent.classList.contains('hidden') && !hasLoadedMissing) {
+                                hasLoadedMissing = true;
+
+                                const missingHeader = document.createElement('h3');
+                                missingHeader.className = "text-lg font-bold mt-8 mb-3 text-center text-red-400";
+                                missingHeader.textContent = "Cartas Faltantes";
+                                
+                                const missingGrid = document.createElement('div');
+                                missingGrid.className = "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4";
+                                
+                                const missingLoader = document.createElement('div');
+                                missingLoader.className = 'loader mx-auto col-span-full';
+                                
+                                collapsibleContent.appendChild(missingHeader);
+                                collapsibleContent.appendChild(missingGrid);
+                                missingGrid.appendChild(missingLoader);
+                                
+                                try {
+                                    const response = await fetch(`https://api.pokemontcg.io/v2/cards?q=set.id:${setId}&orderBy=number&select=id,name,number,images,set`);
+                                    if (!response.ok) throw new Error('API request failed');
+                                    
+                                    const setData = await response.json();
+                                    const allCardsInSet = setData.data;
+                                    const ownedIdsSet = new Set(cardsInGroup.map(c => c.id));
+                                    const missingCards = allCardsInSet.filter(card => !ownedIdsSet.has(card.id));
+                                    
+                                    missingLoader.remove();
+                                    
+                                    if (missingCards.length === 0) {
+                                        missingHeader.textContent = "✨ Você completou esta edição! ✨";
+                                        missingHeader.className = "text-lg font-bold mt-8 mb-3 text-center text-green-400";
+                                    } else {
+                                        missingCards.forEach(card => {
+                                            missingGrid.appendChild(createMissingCardElement(card));
+                                        });
+                                    }
+                                } catch (error) {
+                                    console.error(`Erro ao buscar cartas faltantes para a edição ${setId}:`, error);
+                                    missingLoader.remove();
+                                    const errorMsg = document.createElement('p');
+                                    errorMsg.className = "col-span-full text-center text-yellow-500";
+                                    errorMsg.textContent = "Não foi possível carregar as cartas faltantes.";
+                                    missingGrid.appendChild(errorMsg);
+                                }
+                            }
                         });
                         
                         progressBarContainer.appendChild(progressBarFill);
@@ -313,6 +363,55 @@
                         collectionContainer.appendChild(representativeCard);
                     }
                 }
+            }
+
+            // FUNÇÃO PARA CARTAS FALTANTES RESTAURADA
+            function createMissingCardElement(card) {
+                const affiliateConfig = {
+                    mercadolivre: {
+                        staticLink: 'https://www.mercadolivre.com.br/social/doug14z?matt_word=doug14z&matt_tool=78732339&forceInApp=true&ref=BFyEx4ciPSpWXd94EmSqtJAeDYPSIGau87en%2B10HvqvjXtvmX6FL7%2BqgggdctPEYLn54kiXcIrKXTWKZnjriMI1MA9hBCyx9FD5WJ%2BnmkH29OMe5c%2BO0HWeqhuXTNS5c%2BrATm3r27irjC1U5plPaESvqr0jfS1%2BYn65EsCscziIeHVOy7fNZYKcD411wxH%2FC5XiDsF69dRwE1do0wqx02%2BXjy0Q2hXOKHoDO9zRHrpykCqEC0GgsGQE6vrxrgSxL%2B8JWY7XXn1kgPT%2FFStDz%2FU%2BpW8G%2FX5eLFFb2D6Cw9DscefMYPC14GkIAOKqJ86JkLAqh%2BO7dfGbvRRyuchkp1SPIBE6LWShiqdHjuV7sy1b8fiJg6e1%2BckjqQQsFqXGrsGSygfGunBlP4kjUtEBGUaDMiM%2FTJ2tSYlH6eiVg0ET7xG08nyXpovTuvmxQEJMFPSv%2FLAQVid4vpiqvJT6cyC3wU4XNvVqrFy2Tr%2BkSsqStdRPudPeU8ekBpNotD6%2By%2Fsen1GiyifxJ%2B6zZKfpi3mhyUq%2F%2FrEGpiZ%2FvvYE%3D'
+                    },
+                    amazon: {
+                        tag: 'tcgpokemon0b-20'
+                    }
+                };
+
+                let searchString = card.name;
+                if (card.number && card.set && card.set.printedTotal) {
+                    const paddedNumber = String(card.number).padStart(3, '0');
+                    searchString += ` (${paddedNumber}/${card.set.printedTotal})`;
+                }
+                const amazonSearch = encodeURIComponent(`${searchString} Pokémon TCG`);
+                const amazonLink = `https://www.amazon.com.br/s?k=${amazonSearch}&tag=${affiliateConfig.amazon.tag}`;
+                const mercadoLivreLink = affiliateConfig.mercadolivre.staticLink;
+
+                const cardElement = document.createElement('div');
+                cardElement.className = "bg-gray-800 p-3 rounded-lg flex flex-col items-center text-center";
+                
+                let setInfoHTML = '';
+                if(card.set && card.set.name && card.number) {
+                    const symbolUrl = (card.set.images && card.set.images.symbol) ? card.set.images.symbol : '';
+                    const symbolImg = symbolUrl ? `<img src="${symbolUrl}" class="h-4" alt="Set Symbol">` : '';
+                    setInfoHTML = `<div class="text-xs text-gray-400 flex items-center justify-center gap-1.5 mt-1"><span>${card.set.name}</span> ${symbolImg} <span>#${String(card.number).padStart(3, '0')}</span></div>`;
+                }
+                
+                cardElement.innerHTML = `
+                    <img src="${card.images.large || card.images.small}" alt="${card.name}" class="rounded w-full mb-2 aspect-[5/7] object-cover">
+                    <p class="font-bold text-sm text-white">${card.name}</p>
+                    ${setInfoHTML}
+                    <div class="mt-auto pt-3 text-center w-full">
+                        <p class="text-xs font-bold text-gray-300 mb-2">VER PREÇOS EM:</p>
+                        <div class="flex flex-col sm:flex-row justify-center gap-2">
+                            <a href="${mercadoLivreLink}" target="_blank" rel="noopener noreferrer sponsored" class="flex-1 bg-yellow-400 hover:bg-yellow-500 text-black font-bold text-xs px-2 py-1.5 rounded transition-colors">
+                                Mercado Livre
+                            </a>
+                            <a href="${amazonLink}" target="_blank" rel="noopener noreferrer sponsored" class="flex-1 bg-gray-200 hover:bg-white text-black font-bold text-xs px-2 py-1.5 rounded transition-colors">
+                                Amazon BR
+                            </a>
+                        </div>
+                    </div>
+                `;
+                return cardElement;
             }
             
             function createPokedexStackElement(cardsInStack) {
@@ -364,7 +463,7 @@
                 const quantityToShow = card[quantityKey] || 0;
                 cardElement.innerHTML = `
                     ${pokedexInfo}
-                    <img src="${card.image || card.images.small}" alt="${card.name}" class="rounded w-full mb-2 card-image-zoom">
+                    <img src="${card.image || card.images.small}" alt="${card.name}" class="rounded w-full mb-2 aspect-[5/7] object-cover">
                     <p class="font-bold text-sm">${card.name}</p>
                     ${setInfoHTML}
                     <div class="mt-auto pt-2 text-center">
