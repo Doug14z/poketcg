@@ -358,7 +358,7 @@
                 if(card.set && card.set.name && card.number) {
                     const symbolUrl = (card.set.images && card.set.images.symbol) ? card.set.images.symbol : '';
                     const symbolImg = symbolUrl ? `<img src="${symbolUrl}" class="h-4" alt="Set Symbol">` : '';
-                    setInfoHTML = `<div class="text-xs text-gray-400 flex items-center justify-center gap-1.5 mt-1"><span>${card.set.name}</span> ${symbolImg} <span>#${card.number}</span></div>`;
+                    setInfoHTML = `<div class="text-xs text-gray-400 flex items-center justify-center gap-1.5 mt-1"><span>${card.set.name}</span> ${symbolImg} <span>#${String(card.number).padStart(3, '0')}</span></div>`;
                 }
                 const quantityKey = listType === 'trade' ? 'quantityForTrade' : 'quantityTotal';
                 const quantityToShow = card[quantityKey] || 0;
