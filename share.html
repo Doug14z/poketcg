@@ -135,8 +135,8 @@
             
             let publicCollectionData = [];
             
-            // LÓGICA ATUALIZADA PARA LER A URL
             try {
+                // LÓGICA ATUALIZADA PARA LER AMBOS OS FORMATOS DE URL
                 const params = new URLSearchParams(window.location.search);
                 const listType = params.get('list');
                 let userId = params.get('user');
@@ -236,7 +236,7 @@
                 pokedexProgressFill.style.width = `${pokedexPercentage}%`;
                 if (pokedexPercentage < 30) { pokedexProgressFill.style.background = 'linear-gradient(to right, #ef4444, #f87171)'; } 
                 else if (pokedexPercentage < 60) { pokedexProgressFill.style.background = 'linear-gradient(to right, #f59e0b, #facc15)'; } 
-else { pokedexProgressFill.style.background = 'linear-gradient(to right, #22c55e, #4ade80)'; }
+                else { pokedexProgressFill.style.background = 'linear-gradient(to right, #22c55e, #4ade80)'; }
                 pokedexProgressText.textContent = `${uniquePokemonOwned} / ${TOTAL_POKEMON}`;
                 statsContainer.classList.remove('hidden');
             }
@@ -462,11 +462,13 @@ else { pokedexProgressFill.style.background = 'linear-gradient(to right, #22c55e
             function createCardElement(card, groupBy, versions = [card]) {
                 const cardElement = document.createElement('div');
                 cardElement.className = "bg-gray-800 p-3 rounded-lg flex flex-col items-center text-center collection-card";
-                if(versions.length > 1) {
+                
+                // LÓGICA DE CLIQUE PARA O MODO POKEDEX
+                if (groupBy === 'pokedex' && versions.length > 1) {
                     cardElement.classList.add('cursor-pointer');
                     cardElement.addEventListener('click', () => openPokedexStackModal(versions));
                 }
-
+                
                 const qualityClasses = { 'Nova': 'bg-green-600 text-white', 'Pouco Usada': 'bg-yellow-500 text-gray-900', 'Usada': 'bg-red-600 text-white' };
                 const qualityClass = qualityClasses[card.quality] || 'bg-gray-500';
                 
