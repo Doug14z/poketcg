@@ -567,7 +567,25 @@
                 collectionUnsubscribe = onSnapshot(collectionRef, (snapshot) => {
                     collectionLoader.classList.add('hidden');
                     collectionData.clear();
-                    snapshot.docs.forEach(doc => collectionData.set(doc.id, { ...doc.data(), docId: doc.id }));
+                    
+                    snapshot.docs.forEach(doc => {
+                        const card = doc.data();
+
+                        // *** INÍCIO DA LÓGICA DE CONVERSÃO AUTOMÁTICA ***
+                        // Verifica se a carta está no formato antigo (tem 'quantity' mas não 'quantityTotal')
+                        if (card.quantity !== undefined && card.quantityTotal === undefined) {
+                            card.quantityTotal = card.quantity; // Move o valor do campo antigo para o novo
+                            card.quantityForTrade = 0;         // Define um valor padrão para o campo de troca
+                        }
+                        // Garante que o campo de troca sempre exista, para evitar outros erros
+                        if (card.quantityForTrade === undefined) {
+                            card.quantityForTrade = 0;
+                        }
+                        // *** FIM DA LÓGICA DE CONVERSÃO ***
+
+                        collectionData.set(doc.id, { ...card, docId: doc.id });
+                    });
+
                     renderCollection();
                 }, (error) => {
                     console.error("Erro ao carregar a coleção:", error);
