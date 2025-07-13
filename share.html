@@ -214,7 +214,6 @@
                 statsContainer.classList.remove('hidden');
             }
             
-            // FUNÇÃO RESTAURADA COM TODAS AS VISUALIZAÇÕES
             function renderPublicCollection() {
                 collectionContainer.innerHTML = '';
                 const groupBy = groupBySelect.value;
@@ -365,7 +364,6 @@
                 }
             }
 
-            // FUNÇÃO PARA CARTAS FALTANTES RESTAURADA
             function createMissingCardElement(card) {
                 const affiliateConfig = {
                     mercadolivre: {
@@ -375,7 +373,6 @@
                         tag: 'tcgpokemon0b-20'
                     }
                 };
-
                 let searchString = card.name;
                 if (card.number && card.set && card.set.printedTotal) {
                     const paddedNumber = String(card.number).padStart(3, '0');
@@ -384,17 +381,14 @@
                 const amazonSearch = encodeURIComponent(`${searchString} Pokémon TCG`);
                 const amazonLink = `https://www.amazon.com.br/s?k=${amazonSearch}&tag=${affiliateConfig.amazon.tag}`;
                 const mercadoLivreLink = affiliateConfig.mercadolivre.staticLink;
-
                 const cardElement = document.createElement('div');
                 cardElement.className = "bg-gray-800 p-3 rounded-lg flex flex-col items-center text-center";
-                
                 let setInfoHTML = '';
                 if(card.set && card.set.name && card.number) {
                     const symbolUrl = (card.set.images && card.set.images.symbol) ? card.set.images.symbol : '';
                     const symbolImg = symbolUrl ? `<img src="${symbolUrl}" class="h-4" alt="Set Symbol">` : '';
                     setInfoHTML = `<div class="text-xs text-gray-400 flex items-center justify-center gap-1.5 mt-1"><span>${card.set.name}</span> ${symbolImg} <span>#${String(card.number).padStart(3, '0')}</span></div>`;
                 }
-                
                 cardElement.innerHTML = `
                     <img src="${card.images.large || card.images.small}" alt="${card.name}" class="rounded w-full mb-2 aspect-[5/7] object-cover">
                     <p class="font-bold text-sm text-white">${card.name}</p>
@@ -449,23 +443,39 @@
             function createCardElement(card, groupBy) {
                 const cardElement = document.createElement('div');
                 cardElement.className = "bg-gray-800 p-3 rounded-lg flex flex-col items-center text-center collection-card";
+                
+                const qualityClasses = { 'Nova': 'bg-green-600 text-white', 'Pouco Usada': 'bg-yellow-500 text-gray-900', 'Usada': 'bg-red-600 text-white' };
+                const qualityClass = qualityClasses[card.quality] || 'bg-gray-500';
+                
                 let pokedexInfo = '';
                 if (groupBy === 'pokedex' && card.pokedexNumber) {
                     pokedexInfo = `<p class="font-bold text-lg text-cyan-400">#${String(card.pokedexNumber).padStart(3, '0')}</p>`;
                 }
+                
                 let setInfoHTML = '';
                 if(card.set && card.set.name && card.number) {
                     const symbolUrl = (card.set.images && card.set.images.symbol) ? card.set.images.symbol : '';
                     const symbolImg = symbolUrl ? `<img src="${symbolUrl}" class="h-4" alt="Set Symbol">` : '';
                     setInfoHTML = `<div class="text-xs text-gray-400 flex items-center justify-center gap-1.5 mt-1"><span>${card.set.name}</span> ${symbolImg} <span>#${String(card.number).padStart(3, '0')}</span></div>`;
                 }
+
+                const tagsHTML = `
+                    <div class="flex flex-wrap items-center justify-center gap-1 my-2">
+                       <div class="text-xs font-semibold px-2 py-0.5 rounded-full ${qualityClass}">${card.quality || 'N/A'}</div>
+                       <div class="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-600 text-white">${card.finish || 'N/A'}</div>
+                       <div class="text-xs font-semibold px-2 py-0.5 rounded-full bg-purple-600 text-white">${card.language || 'EN'}</div>
+                    </div>
+                `;
+
                 const quantityKey = listType === 'trade' ? 'quantityForTrade' : 'quantityTotal';
                 const quantityToShow = card[quantityKey] || 0;
+                
                 cardElement.innerHTML = `
                     ${pokedexInfo}
                     <img src="${card.image || card.images.small}" alt="${card.name}" class="rounded w-full mb-2 aspect-[5/7] object-cover">
                     <p class="font-bold text-sm">${card.name}</p>
                     ${setInfoHTML}
+                    ${tagsHTML}
                     <div class="mt-auto pt-2 text-center">
                         <p class="text-sm text-yellow-400 font-bold">R$ ${(card.acquiredPrice || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                         ${quantityToShow > 0 ? `<span class="font-bold text-lg">${quantityToShow}x</span>` : ''}
