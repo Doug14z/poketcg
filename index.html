@@ -328,12 +328,10 @@
                 const releaseYear = new Date(card.set.releaseDate).getFullYear();
                 modalCardSetInfo.innerHTML = `<span class="flex items-center gap-2">${card.set.name} <img src="${card.set.images.symbol}" class="h-5" alt="${card.set.name}"></span> ${releaseYear} &bull; #${String(card.number).padStart(3, '0')} / ${card.set.printedTotal}`;
                 
-                // LÓGICA ATUALIZADA PARA O SELETOR DE ACABAMENTO
                 finishSelect.innerHTML = '';
                 const prices = card.tcgplayer?.prices;
                 const availableFinishes = new Set();
 
-                // Adiciona os acabamentos que têm preço na API
                 if (prices) {
                     for (const key in prices) {
                         if (prices[key]) {
@@ -341,10 +339,8 @@
                         }
                     }
                 }
-                // Garante que a opção "Normal" sempre exista
                 availableFinishes.add('normal');
 
-                // Cria e adiciona as opções ao select
                 availableFinishes.forEach(key => {
                     const option = document.createElement('option');
                     option.value = key;
@@ -354,12 +350,12 @@
 
                 addCardForm.dataset.cardId = card.id;
                 addCardForm.reset();
-                // Garante que o idioma padrão seja Português
                 document.getElementById('language').value = 'BR';
                 updatePriceDisplay();
                 addCardModal.style.display = 'flex';
             };
 
+            // FUNÇÃO ATUALIZADA COM A LÓGICA DE PREÇO CORRIGIDA
             const updatePriceDisplay = () => {
                 const modalPriceDisplay = document.getElementById('modal-price-display');
                 const cardId = addCardForm.dataset.cardId;
@@ -367,16 +363,23 @@
                 const quality = addCardForm.quality.value;
                 const finish = addCardForm.finish.value;
                 let priceUsd = 0;
-                if (card.tcgplayer && card.tcgplayer.prices && card.tcgplayer.prices[finish]) {
-                    const prices = card.tcgplayer.prices[finish];
-                    if (prices) {
+                
+                // Verifica se o objeto de preços existe
+                if (card.tcgplayer && card.tcgplayer.prices) {
+                    // Tenta pegar o preço para o acabamento selecionado
+                    const priceData = card.tcgplayer.prices[finish];
+                    
+                    // Se encontrou dados de preço para o acabamento, calcula o valor
+                    if (priceData) {
                         switch (quality) {
-                            case 'Nova': priceUsd = prices.market || prices.mid || 0; break;
-                            case 'Pouco Usada': priceUsd = prices.mid || prices.low || 0; break;
-                            case 'Usada': priceUsd = prices.low || 0; break;
+                            case 'Nova': priceUsd = priceData.market || priceData.mid || 0; break;
+                            case 'Pouco Usada': priceUsd = priceData.mid || priceData.low || 0; break;
+                            case 'Usada': priceUsd = priceData.low || 0; break;
                         }
                     }
+                    // Se não encontrou (ex: selecionou "Normal" e não tem preço), priceUsd permanece 0.
                 }
+
                 const priceBrl = priceUsd * usdToBrlRate;
                 modalPriceDisplay.textContent = `Valor estimado: R$ ${priceBrl.toFixed(2)}`;
                 addCardForm.dataset.currentPrice = priceBrl.toFixed(2);
