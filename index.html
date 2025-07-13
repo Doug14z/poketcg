@@ -850,14 +850,15 @@
                 <h2 class="text-xl">Adicionar à Coleção</h2>
                 <button id="add-card-modal-close-btn" class="text-4xl font-bold text-gray-400 hover:text-white transition-colors">&times;</button>
             </div>
-            <div class="flex flex-col sm:flex-row gap-6 overflow-y-auto pr-4">
-                <img id="modal-card-image" src="" alt="Imagem da carta" class="w-full sm:w-48 flex-shrink-0 rounded-lg aspect-[5/7] object-cover">
+            <div class="flex flex-col sm:flex-row gap-8 overflow-y-auto pr-4">
+                <img id="modal-card-image" src="" alt="Imagem da carta" class="w-full sm:w-56 flex-shrink-0 rounded-lg aspect-[5/7] object-cover self-start">
                 <form id="add-card-form" class="flex-grow flex flex-col" style="font-family: 'Poppins', sans-serif;">
-                    <h3 id="modal-card-name" class="text-xl font-bold"></h3>
-                    <div id="modal-card-set-info" class="text-sm text-gray-400 mb-4"></div>
-                    <div class="space-y-3">
+                    <h3 id="modal-card-name" class="text-2xl font-bold"></h3>
+                    <div id="modal-card-set-info" class="text-sm text-gray-400 mb-6"></div>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                         <label class="block">
-                            <span class="block mb-1 font-semibold">Qualidade:</span>
+                            <span class="block mb-1 font-semibold text-gray-300">Qualidade:</span>
                             <select name="quality" id="quality" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2">
                                 <option value="Nova">Nova (Mint/NM)</option>
                                 <option value="Pouco Usada">Pouco Usada (LP)</option>
@@ -865,11 +866,11 @@
                             </select>
                         </label>
                         <label class="block">
-                            <span class="block mb-1 font-semibold">Acabamento:</span>
+                            <span class="block mb-1 font-semibold text-gray-300">Acabamento:</span>
                             <select name="finish" id="finish" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2"></select>
                         </label>
                         <label class="block">
-                            <span class="block mb-1 font-semibold">Idioma:</span>
+                            <span class="block mb-1 font-semibold text-gray-300">Idioma:</span>
                             <select name="language" id="language" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2">
                                 <option value="BR">Português (BR)</option>
                                 <option value="EN">Inglês (EN)</option>
@@ -877,12 +878,15 @@
                             </select>
                         </label>
                         <label class="block">
-                            <span class="block mb-1 font-semibold">Quantidade a Adicionar:</span>
+                            <span class="block mb-1 font-semibold text-gray-300">Quantidade:</span>
                             <input type="number" name="quantity" id="quantity" value="1" min="1" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2">
                         </label>
                     </div>
-                    <p id="modal-price-display" class="text-lg font-bold text-yellow-400 my-4">Valor: R$ 0,00</p>
-                    <button type="submit" class="mt-auto w-full bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold py-3 px-4 rounded-lg transition-colors">Confirmar</button>
+                    
+                    <div class="mt-auto">
+                        <p id="modal-price-display" class="text-xl font-bold text-yellow-400 my-4 text-center sm:text-right">Valor: R$ 0,00</p>
+                        <button type="submit" class="w-full bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold py-3 px-4 rounded-lg transition-colors">Confirmar</button>
+                    </div>
                 </form>
             </div>
         </div>
