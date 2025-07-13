@@ -166,7 +166,7 @@
                 };
 
                 // Prepara o nome do card para as URLs de busca
-                const encodedCardName = encodeURIComponent(card.name);
+                const encodedCardName = encodeURIComponent(`${card.name} Carta Pokémon TCG`);
 
                 // --- GERA OS DOIS LINKS DE AFILIADO ---
                 const mercadoLivreLink = `${affiliateConfig.mercadolivre.baseUrl}${encodedCardName}`;
