@@ -19,14 +19,16 @@
         .modal-content { background-color: #1f2937; padding: 1.5rem; border-radius: 16px; width: 90%; max-width: 1200px; max-height: 90vh; box-shadow: 0 10px 25px rgba(0,0,0,0.2); border: 1px solid #374151; display: flex; flex-direction: column; }
 
         .collection-card { position: relative; }
+        .card-image-zoom { transition: transform 0.2s ease-in-out; }
+        .collection-card:hover .card-image-zoom { transform: scale(1.1); z-index: 50; }
         
         .group-header-wrapper { background-color: #374151; padding: 0.75rem 1rem; border-radius: 8px; margin-top: 1rem; cursor: pointer; transition: background-color 0.2s; }
         .group-header-wrapper:hover { background-color: #4b5563; }
         
         .set-logo {
-            height: 196px;
+            height: 60px;
             width: auto;
-            max-width: 350px;
+            max-width: 150px;
             object-fit: contain;
             flex-shrink: 0;
         }
@@ -79,7 +81,7 @@
 
             <div id="loader" class="loader mx-auto"></div>
             <div id="error-message" class="hidden text-center text-red-400"></div>
-            <div id="public-collection"></div>
+            <div id="public-collection" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4"></div>
         </main>
         
         <footer class="text-center p-6 mt-8 border-t border-gray-700 text-xs" style="font-family: 'Poppins', sans-serif;">
@@ -97,6 +99,7 @@
             </div>
         </div>
     </div>
+
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
@@ -440,6 +443,7 @@
                 title.textContent = "Erro";
             }
             
+            // FUNÇÃO ATUALIZADA PARA INCLUIR AS TAGS DE VERSÃO
             function createCardElement(card, groupBy) {
                 const cardElement = document.createElement('div');
                 cardElement.className = "bg-gray-800 p-3 rounded-lg flex flex-col items-center text-center collection-card";
@@ -459,6 +463,7 @@
                     setInfoHTML = `<div class="text-xs text-gray-400 flex items-center justify-center gap-1.5 mt-1"><span>${card.set.name}</span> ${symbolImg} <span>#${String(card.number).padStart(3, '0')}</span></div>`;
                 }
 
+                // TAGS DE QUALIDADE, ACABAMENTO E IDIOMA
                 const tagsHTML = `
                     <div class="flex flex-wrap items-center justify-center gap-1 my-2">
                        <div class="text-xs font-semibold px-2 py-0.5 rounded-full ${qualityClass}">${card.quality || 'N/A'}</div>
