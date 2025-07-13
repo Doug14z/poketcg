@@ -141,9 +141,16 @@
             let db, auth;
             
             // Lógica para abrir o modal de perfil
-            profileButton.addEventListener('click', () => {
+            profileButton.addEventListener('click', async () => {
                 if (auth.currentUser) {
                     profileNameInput.value = auth.currentUser.displayName || '';
+                    const profileRef = doc(db, 'public_profiles', auth.currentUser.uid);
+                    const profileSnap = await getDoc(profileRef);
+                    if (profileSnap.exists() && profileSnap.data().socialLink) {
+                        document.getElementById('profile-social').value = profileSnap.data().socialLink;
+                    } else {
+                        document.getElementById('profile-social').value = '';
+                    }
                     profileFeedback.textContent = '';
                     profileModal.style.display = 'flex';
                 }
@@ -154,10 +161,12 @@
                 profileModal.style.display = 'none';
             });
 
-            // Lógica para salvar o nickname
+            // Lógica para salvar o perfil (nickname E social)
             profileForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const newName = profileNameInput.value.trim();
+                let socialLink = document.getElementById('profile-social').value.trim();
+
                 if (!newName) {
                     profileFeedback.textContent = 'O nickname não pode ficar em branco.';
                     profileFeedback.classList.add('text-red-400');
@@ -165,13 +174,20 @@
                 }
                 if (!auth.currentUser) return;
 
+                if (socialLink && !socialLink.startsWith('http://') && !socialLink.startsWith('https://')) {
+                    socialLink = 'https://' + socialLink;
+                }
+
                 profileFeedback.textContent = 'Salvando...';
                 profileFeedback.classList.remove('text-red-400', 'text-green-400');
 
                 try {
                     await updateProfile(auth.currentUser, { displayName: newName });
                     const profileRef = doc(db, 'public_profiles', auth.currentUser.uid);
-                    await setDoc(profileRef, { ownerName: newName }, { merge: true });
+                    await setDoc(profileRef, { 
+                        ownerName: newName,
+                        socialLink: socialLink 
+                    }, { merge: true });
 
                     userEmailDisplay.textContent = newName;
                     profileFeedback.textContent = 'Perfil atualizado com sucesso!';
@@ -827,7 +843,7 @@
     
     <div id="details-modal" class="modal-overlay"><div class="modal-content"><div class="flex justify-between items-center mb-6"><h2 class="text-2xl">Detalhes da Carta</h2><button id="details-modal-close-btn" class="text-4xl font-bold text-gray-400 hover:text-white transition-colors">&times;</button></div><div class="flex flex-col sm:flex-row gap-6"><img id="details-card-image" src="" alt="Imagem da carta" class="w-full sm:w-1/3 rounded-lg"><div class="flex-grow" style="font-family: 'Poppins', sans-serif;"><h3 id="details-card-name" class="text-2xl font-bold mb-2"></h3><div id="details-card-set-info" class="mb-4"></div><div class="mb-4"><p class="font-semibold">Qualidade:</p><p id="details-card-quality" class="text-lg text-blue-300"></p></div><div class="mb-4"><p class="font-semibold">Acabamento:</p><p id="details-card-finish" class="text-lg text-cyan-300"></p></div><div><p class="font-semibold">Valor Registado:</p><p id="details-card-price" class="text-lg font-bold text-yellow-400"></p><p class="text-xs text-gray-400 mt-2 italic">*Valor em R$ é uma estimativa baseada na cotação do dólar e preços do TCGplayer (EUA).</p></div></div></div></div></div>
     
-    <div id="profile-modal" class="modal-overlay"><div class="modal-content" style="max-width: 500px;"><div class="flex justify-between items-center mb-6"><h2 class="text-xl">Gerenciar Perfil</h2><button id="profile-modal-close-btn" class="text-4xl font-bold text-gray-400 hover:text-white">&times;</button></div><form id="profile-form" style="font-family: 'Poppins', sans-serif;"><div class="mb-4"><label for="profile-name" class="block font-semibold mb-1">Nome / Nickname</label><input type="text" id="profile-name" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2" required></div><div class="mb-4"><label for="profile-social" class="block font-semibold mb-1">Rede Social (opcional)</label><input type="url" id="profile-social" placeholder="https://..." class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2"></div><button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg">Salvar Alterações</button><p id="profile-feedback" class="text-center mt-4 h-5"></p></form></div></div>
+    <div id="profile-modal" class="modal-overlay"><div class="modal-content" style="max-width: 500px;"><div class="flex justify-between items-center mb-6"><h2 class="text-xl">Gerenciar Perfil</h2><button id="profile-modal-close-btn" class="text-4xl font-bold text-gray-400 hover:text-white">&times;</button></div><form id="profile-form" style="font-family: 'Poppins', sans-serif;"><div class="mb-4"><label for="profile-name" class="block font-semibold mb-1">Nome / Nickname</label><input type="text" id="profile-name" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2" required></div><div class="mb-4"><label for="profile-social" class="block font-semibold mb-1">Rede Social (opcional)</label><input type="text" id="profile-social" placeholder="instagram.com/seu_perfil" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2"></div><button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg">Salvar Alterações</button><p id="profile-feedback" class="text-center mt-4 h-5"></p></form></div></div>
     
     <div id="share-modal" class="modal-overlay"><div class="modal-content" style="max-width: 500px; font-family: 'Poppins', sans-serif;"><div class="flex justify-between items-center mb-4"><h2 class="text-xl" style="font-family: 'Press Start 2P', cursive;">Compartilhar Coleção</h2><button id="share-modal-close-btn" class="text-4xl font-bold text-gray-400 hover:text-white">&times;</button></div><p class="text-gray-400 mb-6">Use o link abaixo para compartilhar uma visão pública da sua coleção com outros treinadores!</p><div class="mb-6"><label for="public-toggle" class="flex items-center cursor-pointer"><div class="relative"><input type="checkbox" id="public-toggle" class="sr-only"><div class="block bg-gray-600 w-14 h-8 rounded-full"></div><div class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition" style="transform: translateX(0); background-color: white;"></div></div><div id="public-status-text" class="ml-3 text-white font-medium">Minha coleção é Privada</div></label></div><div><div class="mb-4"><label for="shareable-link-all" class="block text-sm font-medium text-gray-300 mb-1">Link para Exibição (Coleção Completa):</label><div class="flex"><input type="text" id="shareable-link-all" readonly class="w-full bg-gray-800 border border-gray-600 rounded-l-lg px-3 py-2 text-gray-400"><button data-target="shareable-link-all" class="copy-link-btn bg-blue-500 text-white font-bold px-4 rounded-r-lg hover:bg-blue-600">Copiar</button></div></div><div><label for="shareable-link-trade" class="block text-sm font-medium text-gray-300 mb-1">Link para Troca/Venda:</label><div class="flex"><input type="text" id="shareable-link-trade" readonly class="w-full bg-gray-800 border border-gray-600 rounded-l-lg px-3 py-2 text-gray-400"><button data-target="shareable-link-trade" class="copy-link-btn bg-yellow-500 text-gray-900 font-bold px-4 rounded-r-lg hover:bg-yellow-600">Copiar</button></div></div><p id="copy-feedback" class="text-green-400 text-sm text-center mt-3 h-4"></p></div></div></div>
 
