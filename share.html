@@ -1,295 +1,289 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Coleção Pokémon TCG</title>
-<meta name="google-adsense-account" content="ca-pub-6237795768866700">
-<script src="https://cdn.tailwindcss.com"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
-<style>
-body { font-family: 'Poppins', sans-serif; background-color: #111827; color: #f3f4f6; }
-h1, h2, .group-header-name { font-family: 'Press Start 2P', cursive; }
-.loader { border: 4px solid #4b5563; border-top: 4px solid #f59e0b; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
-@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coleção Pokémon TCG</title>
+    <meta name="google-adsense-account" content="ca-pub-6237795768866700">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Poppins', sans-serif; background-color: #111827; color: #f3f4f6; }
+        h1, h2, .group-header-name { font-family: 'Press Start 2P', cursive; }
+        .loader { border: 4px solid #4b5563; border-top: 4px solid #f59e0b; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.85); display: none; align-items: center; justify-content: center; z-index: 100; backdrop-filter: blur(4px); }
+        .modal-content { background-color: #1f2937; padding: 1.5rem; border-radius: 16px; width: 90%; max-width: 1200px; max-height: 90vh; box-shadow: 0 10px 25px rgba(0,0,0,0.2); border: 1px solid #374151; display: flex; flex-direction: column; }
 
-.modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.85); display: none; align-items: center; justify-content: center; z-index: 100; backdrop-filter: blur(4px); }
-.modal-content { background-color: #1f2937; padding: 1.5rem; border-radius: 16px; width: 90%; max-width: 1200px; max-height: 90vh; box-shadow: 0 10px 25px rgba(0,0,0,0.2); border: 1px solid #374151; display: flex; flex-direction: column; }
+        .collection-card { position: relative; }
+        
+        .group-header-wrapper { background-color: #374151; padding: 0.75rem 1rem; border-radius: 8px; margin-top: 1rem; cursor: pointer; transition: background-color 0.2s; }
+        .group-header-wrapper:hover { background-color: #4b5563; }
+        
+        .set-logo {
+            height: 60px;
+            width: auto;
+            max-width: 150px;
+            object-fit: contain;
+            flex-shrink: 0;
+        }
+        
+        .stack-badge { position: absolute; top: 8px; right: 8px; background-color: rgba(245, 158, 11, 0.95); color: white; padding: 2px 8px; border-radius: 9999px; font-size: 0.75rem; font-weight: bold; border: 1px solid white; z-index: 10; }
 
-.collection-card { position: relative; }
-        .card-image-zoom { transition: transform 0.2s ease-in-out; }
-        .collection-card:hover .card-image-zoom { transform: scale(1.1); z-index: 50; }
+        .progress-bar-container { position: relative; height: 22px; background-color: #111827; border-radius: 8px; border: 2px solid #4b5563; margin-top: 0.5rem; overflow: hidden; }
+        .progress-bar-fill { height: 100%; border-radius: 6px; transition: width 0.5s ease-in-out, background 0.5s ease-in-out; }
+        .progress-bar-text { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; color: #ffffff; text-shadow: 1px 1px 2px rgba(0,0,0,0.7); }
 
-.group-header-wrapper { background-color: #374151; padding: 0.75rem 1rem; border-radius: 8px; margin-top: 1rem; cursor: pointer; transition: background-color 0.2s; }
-.group-header-wrapper:hover { background-color: #4b5563; }
-
-.set-logo {
-height: 60px;
-width: auto;
-max-width: 150px;
-object-fit: contain;
-flex-shrink: 0;
-}
-
-.stack-badge { position: absolute; top: 8px; right: 8px; background-color: rgba(245, 158, 11, 0.95); color: white; padding: 2px 8px; border-radius: 9999px; font-size: 0.75rem; font-weight: bold; border: 1px solid white; z-index: 10; }
-
-.progress-bar-container { position: relative; height: 22px; background-color: #111827; border-radius: 8px; border: 2px solid #4b5563; margin-top: 0.5rem; overflow: hidden; }
-.progress-bar-fill { height: 100%; border-radius: 6px; transition: width 0.5s ease-in-out, background 0.5s ease-in-out; }
-.progress-bar-text { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; color: #ffffff; text-shadow: 1px 1px 2px rgba(0,0,0,0.7); }
-
-::-webkit-scrollbar { width: 8px; }
-::-webkit-scrollbar-track { background: #2d3748; }
-::-webkit-scrollbar-thumb { background: #4a5568; border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: #718096; }
-</style>
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #2d3748; }
+        ::-webkit-scrollbar-thumb { background: #4a5568; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #718096; }
+    </style>
 </head>
 <body class="bg-gray-900 text-gray-100">
 
-<div class="container mx-auto p-4 md:p-8">
-<header class="text-center mb-8">
-<h1 id="collection-title" class="text-2xl md:text-3xl font-bold text-white">Carregando coleção...</h1>
-<p id="collection-subtitle" class="text-lg text-yellow-400 mt-2" style="font-family: 'Poppins', sans-serif;"></p>
-<div id="contact-container" class="mt-4"></div>
-</header>
+    <div class="container mx-auto p-4 md:p-8">
+        <header class="text-center mb-8">
+            <h1 id="collection-title" class="text-2xl md:text-3xl font-bold text-white">Carregando coleção...</h1>
+            <p id="collection-subtitle" class="text-lg text-yellow-400 mt-2" style="font-family: 'Poppins', sans-serif;"></p>
+            <div id="contact-container" class="mt-4"></div>
+        </header>
 
-<main>
-<div id="stats-container" class="my-4 text-center hidden" style="font-family: 'Poppins', sans-serif;">
-<p class="font-semibold text-lg">Valor Estimado: <span id="total-value" class="text-yellow-400">R$ 0,00</span></p>
-<p class="text-xs text-gray-500 mt-1">*Valor estimado em Reais (R$) baseado nos preços de mercado em Dólar (USD) do TCGplayer no momento da adição.</p>
+        <main>
+             <div id="stats-container" class="my-4 text-center hidden" style="font-family: 'Poppins', sans-serif;">
+                <p class="font-semibold text-lg">Valor Estimado: <span id="total-value" class="text-yellow-400">R$ 0,00</span></p>
+                <p class="text-xs text-gray-500 mt-1">*Valor estimado em Reais (R$) baseado nos preços de mercado em Dólar (USD) do TCGplayer no momento da adição.</p>
+                
+                <div id="overall-progress-section" class="mt-6 max-w-lg mx-auto">
+                    <h2 class="text-lg font-bold mb-2 text-center" style="font-family: 'Poppins',sans-serif;">Progresso da Pokédex Nacional</h2>
+                    <div class="progress-bar-container">
+                        <div id="pokedex-progress-fill" class="progress-bar-fill"></div>
+                        <span id="pokedex-progress-text" class="progress-bar-text">0/0</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="controls-container" class="hidden flex justify-end items-center mb-4" style="font-family: 'Poppins', sans-serif;">
+                <div>
+                    <label for="group-by-select" class="text-sm font-semibold mr-2">Organizar por:</label>
+                    <select id="group-by-select" class="bg-gray-700 border border-gray-600 rounded-lg px-3 py-1 text-sm">
+                        <option value="pokedex">Pokédex</option>
+                        <option value="edition">Edição</option>
+                        <option value="value">Valor</option>
+                    </select>
+                </div>
+            </div>
 
-<div id="overall-progress-section" class="mt-6 max-w-lg mx-auto">
-<h2 class="text-lg font-bold mb-2 text-center" style="font-family: 'Poppins',sans-serif;">Progresso da Pokédex Nacional</h2>
-<div class="progress-bar-container">
-<div id="pokedex-progress-fill" class="progress-bar-fill"></div>
-<span id="pokedex-progress-text" class="progress-bar-text">0/0</span>
-</div>
-</div>
-</div>
+            <div id="loader" class="loader mx-auto"></div>
+            <div id="error-message" class="hidden text-center text-red-400"></div>
+            <div id="public-collection"></div>
+        </main>
+        
+        <footer class="text-center p-6 mt-8 border-t border-gray-700 text-xs" style="font-family: 'Poppins', sans-serif;">
+            <p class="text-sm text-gray-300">Coleção visualizada através do Gerenciador TCG.</p>
+        </footer>
+    </div>
 
-<div id="controls-container" class="hidden flex justify-end items-center mb-4" style="font-family: 'Poppins', sans-serif;">
-<div>
-<label for="group-by-select" class="text-sm font-semibold mr-2">Organizar por:</label>
-<select id="group-by-select" class="bg-gray-700 border border-gray-600 rounded-lg px-3 py-1 text-sm">
-<option value="pokedex">Pokédex</option>
-<option value="edition">Edição</option>
-<option value="value">Valor</option>
-</select>
-</div>
-</div>
+    <div id="pokedex-stack-modal" class="modal-overlay">
+        <div class="modal-content">
+             <div class="flex justify-between items-center mb-4 pb-4 border-b border-gray-600">
+                <h2 id="stack-modal-title" class="text-xl md:text-2xl">Versões</h2>
+                <button id="stack-modal-close-btn" class="text-4xl font-bold text-gray-400 hover:text-white transition-colors">&times;</button>
+            </div>
+            <div id="stack-modal-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 overflow-y-auto p-1" style="max-height: 70vh;">
+            </div>
+        </div>
+    </div>
 
-<div id="loader" class="loader mx-auto"></div>
-<div id="error-message" class="hidden text-center text-red-400"></div>
-<div id="public-collection"></div>
-</main>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+        import { getFirestore, doc, getDoc, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
 
-<footer class="text-center p-6 mt-8 border-t border-gray-700 text-xs" style="font-family: 'Poppins', sans-serif;">
-<p class="text-sm text-gray-300">Coleção visualizada através do Gerenciador TCG.</p>
-</footer>
-</div>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const firebaseConfig = {
+                apiKey: "AIzaSyDZTXYGAHje-ZFnnhoiNwEUkNAmq63tY68",
+                authDomain: "pokemtcgcard.firebaseapp.com",
+                projectId: "pokemtcgcard",
+                storageBucket: "pokemtcgcard.firebasestorage.app",
+                messagingSenderId: "1056735056128",
+                appId: "1:1056735056128:web:d47f0474b925246c0de3e5",
+                measurementId: "G-JBPHZ0EQWC"
+            };
 
-<div id="pokedex-stack-modal" class="modal-overlay">
-<div class="modal-content">
-<div class="flex justify-between items-center mb-4 pb-4 border-b border-gray-600">
-<h2 id="stack-modal-title" class="text-xl md:text-2xl">Versões</h2>
-<button id="stack-modal-close-btn" class="text-4xl font-bold text-gray-400 hover:text-white transition-colors">&times;</button>
-</div>
-<div id="stack-modal-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 overflow-y-auto p-1" style="max-height: 70vh;">
-</div>
-</div>
-</div>
+            const app = initializeApp(firebaseConfig);
+            const db = getFirestore(app);
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
-import { getFirestore, doc, getDoc, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+            const loader = document.getElementById('loader');
+            const collectionContainer = document.getElementById('public-collection');
+            const title = document.getElementById('collection-title');
+            const subtitle = document.getElementById('collection-subtitle');
+            const errorMessage = document.getElementById('error-message');
+            const controlsContainer = document.getElementById('controls-container');
+            const groupBySelect = document.getElementById('group-by-select');
+            const statsContainer = document.getElementById('stats-container');
+            const totalValueEl = document.getElementById('total-value');
+            const pokedexStackModal = document.getElementById('pokedex-stack-modal');
+            const stackModalTitle = document.getElementById('stack-modal-title');
+            const stackModalGrid = document.getElementById('stack-modal-grid');
+            const stackModalCloseBtn = document.getElementById('stack-modal-close-btn');
+            
+            let publicCollectionData = [];
+            const params = new URLSearchParams(window.location.search);
+            const userId = params.get('user');
+            const listType = params.get('list');
 
-document.addEventListener('DOMContentLoaded', async () => {
-const firebaseConfig = {
-apiKey: "AIzaSyDZTXYGAHje-ZFnnhoiNwEUkNAmq63tY68",
-authDomain: "pokemtcgcard.firebaseapp.com",
-projectId: "pokemtcgcard",
-storageBucket: "pokemtcgcard.firebasestorage.app",
-messagingSenderId: "1056735056128",
-appId: "1:1056735056128:web:d47f0474b925246c0de3e5",
-measurementId: "G-JBPHZ0EQWC"
-};
+            if (!userId) { showError("Nenhum utilizador especificado."); return; }
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+            try {
+                const profileRef = doc(db, 'public_profiles', userId);
+                const profileSnap = await getDoc(profileRef);
 
-const loader = document.getElementById('loader');
-const collectionContainer = document.getElementById('public-collection');
-const title = document.getElementById('collection-title');
-const subtitle = document.getElementById('collection-subtitle');
-const errorMessage = document.getElementById('error-message');
-const controlsContainer = document.getElementById('controls-container');
-const groupBySelect = document.getElementById('group-by-select');
-const statsContainer = document.getElementById('stats-container');
-const totalValueEl = document.getElementById('total-value');
-const pokedexStackModal = document.getElementById('pokedex-stack-modal');
-const stackModalTitle = document.getElementById('stack-modal-title');
-const stackModalGrid = document.getElementById('stack-modal-grid');
-const stackModalCloseBtn = document.getElementById('stack-modal-close-btn');
+                if (!profileSnap.exists() || !profileSnap.data().isPublic) {
+                    showError("Esta coleção é privada ou não existe.");
+                    return;
+                }
 
-let publicCollectionData = [];
-const params = new URLSearchParams(window.location.search);
-const userId = params.get('user');
-const listType = params.get('list');
+                const ownerName = profileSnap.data().ownerName || 'um Treinador';
+                title.textContent = `Coleção de ${ownerName}`;
+                subtitle.textContent = listType === 'trade' ? "Itens para Troca / Venda" : "Coleção Completa";
 
-if (!userId) { showError("Nenhum utilizador especificado."); return; }
+                const socialLink = profileSnap.data().socialLink;
+                if (socialLink) {
+                    const contactContainer = document.getElementById('contact-container');
+                    const contactButton = document.createElement('a');
+                    contactButton.href = socialLink;
+                    contactButton.target = '_blank';
+                    contactButton.rel = 'noopener noreferrer';
+                    contactButton.className = 'inline-block bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-full transition-colors text-sm';
+                    contactButton.innerHTML = `<span class="flex items-center gap-2">Contatar Colecionador <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z" /><path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z" /></svg></span>`;
+                    contactContainer.appendChild(contactButton);
+                }
 
-try {
-const profileRef = doc(db, 'public_profiles', userId);
-const profileSnap = await getDoc(profileRef);
+                const baseCollectionRef = collection(db, `users/${userId}/tcg-collection`);
+                const finalQuery = listType === 'trade' 
+                    ? query(baseCollectionRef, where("quantityForTrade", ">", 0))
+                    : query(baseCollectionRef);
+                
+                const collectionSnapshot = await getDocs(finalQuery);
 
-if (!profileSnap.exists() || !profileSnap.data().isPublic) {
-showError("Esta coleção é privada ou não existe.");
-return;
-}
+                if (collectionSnapshot.empty) {
+                    loader.classList.add('hidden');
+                    const emptyMessage = listType === 'trade' ? 'Nenhuma carta disponível para troca no momento.' : 'Esta coleção está vazia.';
+                    collectionContainer.innerHTML = `<p class="col-span-full text-center text-gray-400">${emptyMessage}</p>`;
+                    return;
+                }
+                
+                publicCollectionData = collectionSnapshot.docs.map(doc => {
+                    const card = doc.data();
+                    if (card.quantity !== undefined && card.quantityTotal === undefined) {
+                        card.quantityTotal = card.quantity;
+                        card.quantityForTrade = 0;
+                    }
+                    if (card.quantityForTrade === undefined) card.quantityForTrade = 0;
+                    return { ...card, docId: doc.id };
+                });
+                
+                calculateAndDisplayStats();
+                renderPublicCollection();
+                controlsContainer.classList.remove('hidden');
+                controlsContainer.classList.add('flex');
+                loader.classList.add('hidden');
+            } catch (error) {
+                console.error("Erro ao buscar coleção pública:", error);
+                showError("Não foi possível carregar a coleção. Verifique o link ou tente mais tarde.");
+            }
+            
+            function calculateAndDisplayStats() {
+                const TOTAL_POKEMON = 1025;
+                const quantityKey = listType === 'trade' ? 'quantityForTrade' : 'quantityTotal';
+                const totalValue = publicCollectionData.reduce((sum, card) => sum + (card.acquiredPrice || 0) * (card[quantityKey] || 0), 0);
+                totalValueEl.textContent = `R$ ${totalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                const ownedPokedexNumbers = new Set(publicCollectionData.filter(c => c.pokedexNumber).map(c => c.pokedexNumber));
+                const uniquePokemonOwned = ownedPokedexNumbers.size;
+                const pokedexPercentage = TOTAL_POKEMON > 0 ? (uniquePokemonOwned / TOTAL_POKEMON) * 100 : 0;
+                const pokedexProgressFill = document.getElementById('pokedex-progress-fill');
+                const pokedexProgressText = document.getElementById('pokedex-progress-text');
+                pokedexProgressFill.style.width = `${pokedexPercentage}%`;
+                if (pokedexPercentage < 30) { pokedexProgressFill.style.background = 'linear-gradient(to right, #ef4444, #f87171)'; } 
+                else if (pokedexPercentage < 60) { pokedexProgressFill.style.background = 'linear-gradient(to right, #f59e0b, #facc15)'; } 
+                else { pokedexProgressFill.style.background = 'linear-gradient(to right, #22c55e, #4ade80)'; }
+                pokedexProgressText.textContent = `${uniquePokemonOwned} / ${TOTAL_POKEMON}`;
+                statsContainer.classList.remove('hidden');
+            }
+            
+            function renderPublicCollection() {
+                collectionContainer.innerHTML = '';
+                const groupBy = groupBySelect.value;
+                const allCards = [...publicCollectionData].filter(c => c && c.set && c.set.id);
 
-const ownerName = profileSnap.data().ownerName || 'um Treinador';
-title.textContent = `Coleção de ${ownerName}`;
-subtitle.textContent = listType === 'trade' ? "Itens para Troca / Venda" : "Coleção Completa";
+                if (groupBy === 'value') {
+                    collectionContainer.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4';
+                    allCards.sort((a, b) => (b.acquiredPrice || 0) - (a.acquiredPrice || 0));
+                    allCards.forEach(card => collectionContainer.appendChild(createCardElement(card, groupBy)));
+                
+                } else if (groupBy === 'edition') {
+                    collectionContainer.className = 'flex flex-col gap-2';
+                    const grouped = {};
+                    allCards.forEach(card => {
+                        if (!grouped[card.set.id]) grouped[card.set.id] = [];
+                        grouped[card.set.id].push(card);
+                    });
+                    
+                    const sortedGroupKeys = Object.keys(grouped).sort((a, b) => new Date(grouped[b][0].set.releaseDate) - new Date(grouped[a][0].set.releaseDate));
 
-const socialLink = profileSnap.data().socialLink;
-if (socialLink) {
-const contactContainer = document.getElementById('contact-container');
-const contactButton = document.createElement('a');
-contactButton.href = socialLink;
-contactButton.target = '_blank';
-contactButton.rel = 'noopener noreferrer';
-contactButton.className = 'inline-block bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-full transition-colors text-sm';
-contactButton.innerHTML = `<span class="flex items-center gap-2">Contatar Colecionador <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z" /><path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z" /></svg></span>`;
-contactContainer.appendChild(contactButton);
-}
+                    for (const setId of sortedGroupKeys) {
+                        const cardsInGroup = grouped[setId];
+                        const set = cardsInGroup[0].set;
+                        const uniqueOwnedIds = new Set(cardsInGroup.map(c => c.id));
+                        const percentage = set.printedTotal > 0 ? (uniqueOwnedIds.size / set.printedTotal) * 100 : 0;
+                        
+                        const headerWrapper = document.createElement('div');
+                        headerWrapper.className = 'group-header-wrapper';
+                        
+                        const headerContent = document.createElement('div');
+                        headerContent.className = 'flex items-center gap-4';
+                        
+                        const logoImg = document.createElement('img');
+                        logoImg.src = set.images.logo || set.images.symbol;
+                        logoImg.alt = `Logo de ${set.name}`;
+                        logoImg.className = 'set-logo';
+                        
+                        const infoDiv = document.createElement('div');
+                        infoDiv.className = 'flex-grow';
+                        
+                        const groupHeaderName = document.createElement('div');
+                        groupHeaderName.className = 'group-header-name text-sm';
+                        groupHeaderName.textContent = `${set.name} (${uniqueOwnedIds.size}/${set.printedTotal})`;
+                        
+                        const progressBarContainer = document.createElement('div');
+                        progressBarContainer.className = 'progress-bar-container';
+                        const progressBarFill = document.createElement('div');
+                        progressBarFill.className = 'progress-bar-fill';
+                        progressBarFill.style.width = `${percentage}%`;
+                        if (percentage < 30) { progressBarFill.style.background = 'linear-gradient(to right, #ef4444, #f87171)'; }
+                        else if (percentage < 60) { progressBarFill.style.background = 'linear-gradient(to right, #f59e0b, #facc15)'; }
+                        else { progressBarFill.style.background = 'linear-gradient(to right, #22c55e, #4ade80)'; }
+                        
+                        const progressBarText = document.createElement('span');
+                        progressBarText.className = 'progress-bar-text';
+                        progressBarText.textContent = `${Math.round(percentage)}%`;
 
-const baseCollectionRef = collection(db, `users/${userId}/tcg-collection`);
-const finalQuery = listType === 'trade' 
-? query(baseCollectionRef, where("quantityForTrade", ">", 0))
-: query(baseCollectionRef);
-
-const collectionSnapshot = await getDocs(finalQuery);
-
-if (collectionSnapshot.empty) {
-loader.classList.add('hidden');
-const emptyMessage = listType === 'trade' ? 'Nenhuma carta disponível para troca no momento.' : 'Esta coleção está vazia.';
-collectionContainer.innerHTML = `<p class="col-span-full text-center text-gray-400">${emptyMessage}</p>`;
-return;
-}
-
-publicCollectionData = collectionSnapshot.docs.map(doc => {
-const card = doc.data();
-if (card.quantity !== undefined && card.quantityTotal === undefined) {
-card.quantityTotal = card.quantity;
-card.quantityForTrade = 0;
-}
-if (card.quantityForTrade === undefined) card.quantityForTrade = 0;
-return { ...card, docId: doc.id };
-});
-
-calculateAndDisplayStats();
-renderPublicCollection();
-controlsContainer.classList.remove('hidden');
-controlsContainer.classList.add('flex');
-loader.classList.add('hidden');
-} catch (error) {
-console.error("Erro ao buscar coleção pública:", error);
-showError("Não foi possível carregar a coleção. Verifique o link ou tente mais tarde.");
-}
-
-function calculateAndDisplayStats() {
-const TOTAL_POKEMON = 1025;
-const quantityKey = listType === 'trade' ? 'quantityForTrade' : 'quantityTotal';
-const totalValue = publicCollectionData.reduce((sum, card) => sum + (card.acquiredPrice || 0) * (card[quantityKey] || 0), 0);
-totalValueEl.textContent = `R$ ${totalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-const ownedPokedexNumbers = new Set(publicCollectionData.filter(c => c.pokedexNumber).map(c => c.pokedexNumber));
-const uniquePokemonOwned = ownedPokedexNumbers.size;
-const pokedexPercentage = TOTAL_POKEMON > 0 ? (uniquePokemonOwned / TOTAL_POKEMON) * 100 : 0;
-const pokedexProgressFill = document.getElementById('pokedex-progress-fill');
-const pokedexProgressText = document.getElementById('pokedex-progress-text');
-pokedexProgressFill.style.width = `${pokedexPercentage}%`;
-if (pokedexPercentage < 30) { pokedexProgressFill.style.background = 'linear-gradient(to right, #ef4444, #f87171)'; } 
-else if (pokedexPercentage < 60) { pokedexProgressFill.style.background = 'linear-gradient(to right, #f59e0b, #facc15)'; } 
-else { pokedexProgressFill.style.background = 'linear-gradient(to right, #22c55e, #4ade80)'; }
-pokedexProgressText.textContent = `${uniquePokemonOwned} / ${TOTAL_POKEMON}`;
-statsContainer.classList.remove('hidden');
-}
-
-            // FUNÇÃO RESTAURADA COM TODAS AS VISUALIZAÇÕES
-function renderPublicCollection() {
-collectionContainer.innerHTML = '';
-const groupBy = groupBySelect.value;
-const allCards = [...publicCollectionData].filter(c => c && c.set && c.set.id);
-
-if (groupBy === 'value') {
-collectionContainer.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4';
-allCards.sort((a, b) => (b.acquiredPrice || 0) - (a.acquiredPrice || 0));
-allCards.forEach(card => collectionContainer.appendChild(createCardElement(card, groupBy)));
-
-} else if (groupBy === 'edition') {
-collectionContainer.className = 'flex flex-col gap-2';
-const grouped = {};
-allCards.forEach(card => {
-if (!grouped[card.set.id]) grouped[card.set.id] = [];
-grouped[card.set.id].push(card);
-});
-
-const sortedGroupKeys = Object.keys(grouped).sort((a, b) => new Date(grouped[b][0].set.releaseDate) - new Date(grouped[a][0].set.releaseDate));
-
-for (const setId of sortedGroupKeys) {
-const cardsInGroup = grouped[setId];
-const set = cardsInGroup[0].set;
-const uniqueOwnedIds = new Set(cardsInGroup.map(c => c.id));
-const percentage = set.printedTotal > 0 ? (uniqueOwnedIds.size / set.printedTotal) * 100 : 0;
-
-const headerWrapper = document.createElement('div');
-headerWrapper.className = 'group-header-wrapper';
-
-const headerContent = document.createElement('div');
-headerContent.className = 'flex items-center gap-4';
-
-const logoImg = document.createElement('img');
-logoImg.src = set.images.logo || set.images.symbol;
-logoImg.alt = `Logo de ${set.name}`;
-logoImg.className = 'set-logo';
-
-const infoDiv = document.createElement('div');
-infoDiv.className = 'flex-grow';
-
-const groupHeaderName = document.createElement('div');
-groupHeaderName.className = 'group-header-name text-sm';
-groupHeaderName.textContent = `${set.name} (${uniqueOwnedIds.size}/${set.printedTotal})`;
-
-const progressBarContainer = document.createElement('div');
-progressBarContainer.className = 'progress-bar-container';
-const progressBarFill = document.createElement('div');
-progressBarFill.className = 'progress-bar-fill';
-progressBarFill.style.width = `${percentage}%`;
-if (percentage < 30) { progressBarFill.style.background = 'linear-gradient(to right, #ef4444, #f87171)'; }
-else if (percentage < 60) { progressBarFill.style.background = 'linear-gradient(to right, #f59e0b, #facc15)'; }
-else { progressBarFill.style.background = 'linear-gradient(to right, #22c55e, #4ade80)'; }
-
-const progressBarText = document.createElement('span');
-progressBarText.className = 'progress-bar-text';
-progressBarText.textContent = `${Math.round(percentage)}%`;
-
-const collapsibleContent = document.createElement('div');
-                        collapsibleContent.className = "mt-4 hidden grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4"; 
+                        const collapsibleContent = document.createElement('div');
                         collapsibleContent.className = "mt-4 hidden";
-
+                        
                         const ownedGrid = document.createElement('div');
                         ownedGrid.className = "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4";
-cardsInGroup.sort((a,b) => (parseInt(String(a.number).replace(/[^0-9]/g, '')) || 0) - (parseInt(String(b.number).replace(/[^0-9]/g, '')) || 0))
-                            .forEach(card => collapsibleContent.appendChild(createCardElement(card, 'edition')));
+                        cardsInGroup.sort((a,b) => (parseInt(String(a.number).replace(/[^0-9]/g, '')) || 0) - (parseInt(String(b.number).replace(/[^0-9]/g, '')) || 0))
                             .forEach(card => ownedGrid.appendChild(createCardElement(card, 'edition')));
-
-                        headerWrapper.addEventListener('click', () => {
+                        
                         collapsibleContent.appendChild(ownedGrid);
                         
                         let hasLoadedMissing = false;
                         headerWrapper.addEventListener('click', async () => {
-collapsibleContent.classList.toggle('hidden');
+                            collapsibleContent.classList.toggle('hidden');
 
                             if (!collapsibleContent.classList.contains('hidden') && !hasLoadedMissing) {
                                 hasLoadedMissing = true;
@@ -336,41 +330,40 @@ collapsibleContent.classList.toggle('hidden');
                                     missingGrid.appendChild(errorMsg);
                                 }
                             }
-});
+                        });
+                        
+                        progressBarContainer.appendChild(progressBarFill);
+                        progressBarContainer.appendChild(progressBarText);
+                        infoDiv.appendChild(groupHeaderName);
+                        infoDiv.appendChild(progressBarContainer);
+                        headerContent.appendChild(logoImg);
+                        headerContent.appendChild(infoDiv);
+                        headerWrapper.appendChild(headerContent);
+                        
+                        collectionContainer.appendChild(headerWrapper);
+                        collectionContainer.appendChild(collapsibleContent);
+                    }
 
-progressBarContainer.appendChild(progressBarFill);
-progressBarContainer.appendChild(progressBarText);
-infoDiv.appendChild(groupHeaderName);
-infoDiv.appendChild(progressBarContainer);
-headerContent.appendChild(logoImg);
-headerContent.appendChild(infoDiv);
-headerWrapper.appendChild(headerContent);
+                } else { // Agrupar por Pokédex
+                    collectionContainer.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4';
+                    const pokedexGroup = {};
+                    allCards.forEach(card => {
+                        if (card.pokedexNumber) {
+                            if (!pokedexGroup[card.pokedexNumber]) pokedexGroup[card.pokedexNumber] = [];
+                            pokedexGroup[card.pokedexNumber].push(card);
+                        }
+                    });
 
-collectionContainer.appendChild(headerWrapper);
-collectionContainer.appendChild(collapsibleContent);
-}
+                    const sortedPokedexNumbers = Object.keys(pokedexGroup).sort((a, b) => a - b);
+                    
+                    for (const pokedexNum of sortedPokedexNumbers) {
+                        const cardsInStack = pokedexGroup[pokedexNum];
+                        const representativeCard = createPokedexStackElement(cardsInStack);
+                        collectionContainer.appendChild(representativeCard);
+                    }
+                }
+            }
 
-} else { // Agrupar por Pokédex
-collectionContainer.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4';
-const pokedexGroup = {};
-allCards.forEach(card => {
-if (card.pokedexNumber) {
-if (!pokedexGroup[card.pokedexNumber]) pokedexGroup[card.pokedexNumber] = [];
-pokedexGroup[card.pokedexNumber].push(card);
-}
-});
-
-const sortedPokedexNumbers = Object.keys(pokedexGroup).sort((a, b) => a - b);
-
-for (const pokedexNum of sortedPokedexNumbers) {
-const cardsInStack = pokedexGroup[pokedexNum];
-const representativeCard = createPokedexStackElement(cardsInStack);
-collectionContainer.appendChild(representativeCard);
-}
-}
-}
-
-            // FUNÇÃO PARA CARTAS FALTANTES RESTAURADA
             function createMissingCardElement(card) {
                 const affiliateConfig = {
                     mercadolivre: {
@@ -380,7 +373,6 @@ collectionContainer.appendChild(representativeCard);
                         tag: 'tcgpokemon0b-20'
                     }
                 };
-
                 let searchString = card.name;
                 if (card.number && card.set && card.set.printedTotal) {
                     const paddedNumber = String(card.number).padStart(3, '0');
@@ -389,17 +381,14 @@ collectionContainer.appendChild(representativeCard);
                 const amazonSearch = encodeURIComponent(`${searchString} Pokémon TCG`);
                 const amazonLink = `https://www.amazon.com.br/s?k=${amazonSearch}&tag=${affiliateConfig.amazon.tag}`;
                 const mercadoLivreLink = affiliateConfig.mercadolivre.staticLink;
-
                 const cardElement = document.createElement('div');
                 cardElement.className = "bg-gray-800 p-3 rounded-lg flex flex-col items-center text-center";
-                
                 let setInfoHTML = '';
                 if(card.set && card.set.name && card.number) {
                     const symbolUrl = (card.set.images && card.set.images.symbol) ? card.set.images.symbol : '';
                     const symbolImg = symbolUrl ? `<img src="${symbolUrl}" class="h-4" alt="Set Symbol">` : '';
                     setInfoHTML = `<div class="text-xs text-gray-400 flex items-center justify-center gap-1.5 mt-1"><span>${card.set.name}</span> ${symbolImg} <span>#${String(card.number).padStart(3, '0')}</span></div>`;
                 }
-                
                 cardElement.innerHTML = `
                     <img src="${card.images.large || card.images.small}" alt="${card.name}" class="rounded w-full mb-2 aspect-[5/7] object-cover">
                     <p class="font-bold text-sm text-white">${card.name}</p>
@@ -418,71 +407,86 @@ collectionContainer.appendChild(representativeCard);
                 `;
                 return cardElement;
             }
+            
+            function createPokedexStackElement(cardsInStack) {
+                const representativeCard = cardsInStack[0];
+                const cardElement = createCardElement(representativeCard, 'pokedex');
+                if (cardsInStack.length > 1) {
+                    const badge = document.createElement('div');
+                    badge.className = 'stack-badge';
+                    badge.textContent = `${cardsInStack.length} Versões`;
+                    cardElement.appendChild(badge);
+                    cardElement.classList.add('cursor-pointer');
+                    cardElement.addEventListener('click', () => openPokedexStackModal(cardsInStack));
+                }
+                return cardElement;
+            }
 
-function createPokedexStackElement(cardsInStack) {
-const representativeCard = cardsInStack[0];
-const cardElement = createCardElement(representativeCard, 'pokedex');
-if (cardsInStack.length > 1) {
-const badge = document.createElement('div');
-badge.className = 'stack-badge';
-badge.textContent = `${cardsInStack.length} Versões`;
-cardElement.appendChild(badge);
-cardElement.classList.add('cursor-pointer');
-cardElement.addEventListener('click', () => openPokedexStackModal(cardsInStack));
-}
-return cardElement;
-}
+            function openPokedexStackModal(cardsInStack) {
+                stackModalTitle.textContent = `Versões de ${cardsInStack[0].name}`;
+                stackModalGrid.innerHTML = '';
+                cardsInStack.sort((a,b) => new Date(a.set.releaseDate) - new Date(b.set.releaseDate))
+                    .forEach(card => {
+                        const cardElement = createCardElement(card, 'pokedex');
+                        stackModalGrid.appendChild(cardElement);
+                    });
+                pokedexStackModal.style.display = 'flex';
+            }
 
-function openPokedexStackModal(cardsInStack) {
-stackModalTitle.textContent = `Versões de ${cardsInStack[0].name}`;
-stackModalGrid.innerHTML = '';
-cardsInStack.sort((a,b) => new Date(a.set.releaseDate) - new Date(b.set.releaseDate))
-.forEach(card => {
-const cardElement = createCardElement(card, 'pokedex');
-stackModalGrid.appendChild(cardElement);
-});
-pokedexStackModal.style.display = 'flex';
-}
+            function showError(message) {
+                loader.classList.add('hidden');
+                errorMessage.textContent = message;
+                errorMessage.classList.remove('hidden');
+                title.textContent = "Erro";
+            }
+            
+            function createCardElement(card, groupBy) {
+                const cardElement = document.createElement('div');
+                cardElement.className = "bg-gray-800 p-3 rounded-lg flex flex-col items-center text-center collection-card";
+                
+                const qualityClasses = { 'Nova': 'bg-green-600 text-white', 'Pouco Usada': 'bg-yellow-500 text-gray-900', 'Usada': 'bg-red-600 text-white' };
+                const qualityClass = qualityClasses[card.quality] || 'bg-gray-500';
+                
+                let pokedexInfo = '';
+                if (groupBy === 'pokedex' && card.pokedexNumber) {
+                    pokedexInfo = `<p class="font-bold text-lg text-cyan-400">#${String(card.pokedexNumber).padStart(3, '0')}</p>`;
+                }
+                
+                let setInfoHTML = '';
+                if(card.set && card.set.name && card.number) {
+                    const symbolUrl = (card.set.images && card.set.images.symbol) ? card.set.images.symbol : '';
+                    const symbolImg = symbolUrl ? `<img src="${symbolUrl}" class="h-4" alt="Set Symbol">` : '';
+                    setInfoHTML = `<div class="text-xs text-gray-400 flex items-center justify-center gap-1.5 mt-1"><span>${card.set.name}</span> ${symbolImg} <span>#${String(card.number).padStart(3, '0')}</span></div>`;
+                }
 
-function showError(message) {
-loader.classList.add('hidden');
-errorMessage.textContent = message;
-errorMessage.classList.remove('hidden');
-title.textContent = "Erro";
-}
+                const tagsHTML = `
+                    <div class="flex flex-wrap items-center justify-center gap-1 my-2">
+                       <div class="text-xs font-semibold px-2 py-0.5 rounded-full ${qualityClass}">${card.quality || 'N/A'}</div>
+                       <div class="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-600 text-white">${card.finish || 'N/A'}</div>
+                       <div class="text-xs font-semibold px-2 py-0.5 rounded-full bg-purple-600 text-white">${card.language || 'EN'}</div>
+                    </div>
+                `;
 
-function createCardElement(card, groupBy) {
-const cardElement = document.createElement('div');
-cardElement.className = "bg-gray-800 p-3 rounded-lg flex flex-col items-center text-center collection-card";
-let pokedexInfo = '';
-if (groupBy === 'pokedex' && card.pokedexNumber) {
-pokedexInfo = `<p class="font-bold text-lg text-cyan-400">#${String(card.pokedexNumber).padStart(3, '0')}</p>`;
-}
-let setInfoHTML = '';
-if(card.set && card.set.name && card.number) {
-const symbolUrl = (card.set.images && card.set.images.symbol) ? card.set.images.symbol : '';
-const symbolImg = symbolUrl ? `<img src="${symbolUrl}" class="h-4" alt="Set Symbol">` : '';
-setInfoHTML = `<div class="text-xs text-gray-400 flex items-center justify-center gap-1.5 mt-1"><span>${card.set.name}</span> ${symbolImg} <span>#${String(card.number).padStart(3, '0')}</span></div>`;
-}
-const quantityKey = listType === 'trade' ? 'quantityForTrade' : 'quantityTotal';
-const quantityToShow = card[quantityKey] || 0;
-cardElement.innerHTML = `
-                   ${pokedexInfo}
-                    <img src="${card.image || card.images.small}" alt="${card.name}" class="rounded w-full mb-2 card-image-zoom">
+                const quantityKey = listType === 'trade' ? 'quantityForTrade' : 'quantityTotal';
+                const quantityToShow = card[quantityKey] || 0;
+                
+                cardElement.innerHTML = `
+                    ${pokedexInfo}
                     <img src="${card.image || card.images.small}" alt="${card.name}" class="rounded w-full mb-2 aspect-[5/7] object-cover">
-                   <p class="font-bold text-sm">${card.name}</p>
-                   ${setInfoHTML}
-                   <div class="mt-auto pt-2 text-center">
-                       <p class="text-sm text-yellow-400 font-bold">R$ ${(card.acquiredPrice || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                       ${quantityToShow > 0 ? `<span class="font-bold text-lg">${quantityToShow}x</span>` : ''}
-                   </div>
-               `;
-return cardElement;
-}
-
-groupBySelect.addEventListener('change', renderPublicCollection);
-stackModalCloseBtn.addEventListener('click', () => pokedexStackModal.style.display = 'none');
-});
-</script>
+                    <p class="font-bold text-sm">${card.name}</p>
+                    ${setInfoHTML}
+                    ${tagsHTML}
+                    <div class="mt-auto pt-2 text-center">
+                        <p class="text-sm text-yellow-400 font-bold">R$ ${(card.acquiredPrice || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                        ${quantityToShow > 0 ? `<span class="font-bold text-lg">${quantityToShow}x</span>` : ''}
+                    </div>
+                `;
+                return cardElement;
+            }
+            
+            groupBySelect.addEventListener('change', renderPublicCollection);
+            stackModalCloseBtn.addEventListener('click', () => pokedexStackModal.style.display = 'none');
+        });
+    </script>
 </body>
 </html>
