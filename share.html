@@ -152,11 +152,30 @@
         //
 
         function createMissingCardElement(card) {
+                // --- CONFIGURAÇÃO DOS AFILIADOS ---
+                // Insira seus IDs de afiliado para AMBAS as plataformas abaixo.
+                const affiliateConfig = {
+                    mercadolivre: {
+                        // Para o Mercado Livre, use a URL de busca. A monetização exata
+                        // pode depender das ferramentas que eles fornecem no portal de afiliados.
+                        baseUrl: 'https://lista.mercadolivre.com.br/'
+                    },
+                    amazon: {
+                        tag: 'tcgpokemon0b-20' // Substitua pelo seu ID da Amazon Associados
+                    }
+                };
+
+                // Prepara o nome do card para as URLs de busca
+                const encodedCardName = encodeURIComponent(card.name);
+
+                // --- GERA OS DOIS LINKS DE AFILIADO ---
+                const mercadoLivreLink = `${affiliateConfig.mercadolivre.baseUrl}${encodedCardName}`;
+                const amazonLink = `https://www.amazon.com.br/s?k=${encodedCardName}&tag=${affiliateConfig.amazon.tag}`;
+
+                // Cria o elemento DIV que conterá o card (não será mais um link único)
                 const cardElement = document.createElement('div');
-                // Mantemos uma opacidade menor para diferenciar visualmente que é uma carta faltante
-                cardElement.className = "bg-gray-800 p-3 rounded-lg flex flex-col items-center text-center collection-card opacity-70";
+                cardElement.className = "bg-gray-800 p-3 rounded-lg flex flex-col items-center text-center collection-card";
                 
-                // Construindo as informações da Edição (Set)
                 let setInfoHTML = '';
                 if(card.set && card.set.name && card.number) {
                     const symbolUrl = (card.set.images && card.set.images.symbol) ? card.set.images.symbol : '';
@@ -164,15 +183,24 @@
                     setInfoHTML = `<div class="text-xs text-gray-400 flex items-center justify-center gap-1.5 mt-1"><span>${card.set.name}</span> ${symbolImg} <span>#${card.number}</span></div>`;
                 }
                 
+                // Note que o HTML agora tem dois botões <a> separados na parte de baixo
                 cardElement.innerHTML = `
                     <img src="${card.images.large}" alt="${card.name}" class="rounded w-full mb-2 card-image-zoom">
-                    <p class="font-bold text-sm">${card.name}</p>
+                    <p class="font-bold text-sm text-white">${card.name}</p>
                     ${setInfoHTML}
-                    <div class="mt-auto pt-2 text-center">
-                        <p class="text-sm text-gray-500 font-bold">Não Adquirido</p>
-                        <span class="font-bold text-lg">0x</span>
+                    <div class="mt-auto pt-3 text-center w-full">
+                        <p class="text-xs font-bold text-gray-300 mb-2">VER PREÇOS EM:</p>
+                        <div class="flex flex-col sm:flex-row justify-center gap-2">
+                            <a href="${mercadoLivreLink}" target="_blank" rel="noopener noreferrer sponsored" class="flex-1 bg-yellow-400 hover:bg-yellow-500 text-black font-bold text-xs px-2 py-1.5 rounded transition-colors">
+                                Mercado Livre
+                            </a>
+                            <a href="${amazonLink}" target="_blank" rel="noopener noreferrer sponsored" class="flex-1 bg-gray-200 hover:bg-white text-black font-bold text-xs px-2 py-1.5 rounded transition-colors">
+                                Amazon BR
+                            </a>
+                        </div>
                     </div>
                 `;
+                
                 return cardElement;
             }
 
