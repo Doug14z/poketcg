@@ -265,8 +265,10 @@
                     if (!searchTerm) return;
                     const numberSearchRegex = /^(\d+)\/(\d+)$/;
                     const numberMatch = searchTerm.match(numberSearchRegex);
+
                     if (numberMatch) {
-                        const cardNumber = numberMatch[1];
+                        // CORREÇÃO DA BUSCA: Converte o número para um inteiro para remover zeros à esquerda.
+                        const cardNumber = parseInt(numberMatch[1], 10);
                         query = `number:"${cardNumber}"`;
                         postFilter = (cards) => {
                             const setTotal = parseInt(numberMatch[2], 10);
@@ -586,7 +588,7 @@
                     pokedexInfo = `<p class="font-bold text-lg text-cyan-400 mb-1">#${String(card.pokedexNumber).padStart(3, '0')}</p>`;
                 }
                 const cardElement = document.createElement('div');
-                cardElement.className = `bg-gray-800 p-3 rounded-lg flex flex-col justify-between text-center collection-card transition-colors hover:bg-gray-700`;
+                cardElement.className = `bg-gray-800 p-3 rounded-lg flex flex-col text-center collection-card transition-colors hover:bg-gray-700`;
                 cardElement.dataset.id = card.docId;
                 
                 const cardPrice = (card.acquiredPrice || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -594,7 +596,7 @@
                 const detailsAreaHTML = `
                     <div class="w-full cursor-pointer" data-action="details">
                         ${pokedexInfo}
-                        <img src="${card.image}" alt="${card.name}" class="rounded w-full mb-2 pointer-events-none">
+                        <img src="${card.image}" alt="${card.name}" class="rounded w-full mb-2 pointer-events-none aspect-[5/7] object-cover">
                         <p class="font-bold text-sm pointer-events-none">${card.name}</p>
                         <div class="text-xs text-gray-400 flex items-center justify-center gap-1.5 mt-1 pointer-events-none">
                             <span>${card.set.name}</span> 
