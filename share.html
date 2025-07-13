@@ -153,7 +153,6 @@
 
         function createMissingCardElement(card) {
                 // --- CONFIGURAÇÃO DOS AFILIADOS ---
-                // Insira seus IDs de afiliado para AMBAS as plataformas abaixo.
                 const affiliateConfig = {
                     mercadolivre: {
                         baseUrl: 'https://lista.mercadolivre.com.br/'
@@ -163,17 +162,19 @@
                     }
                 };
 
-                // --- PREPARA A BUSCA SUPER ESPECÍFICA (COM NOME E EDIÇÃO) ---
+                // --- PREPARA A BUSCA COM NUMERAÇÃO EXATA DE COLECIONADOR (NOME + NÚMERO) ---
                 let searchString = card.name;
-                // Adiciona o nome da edição (set) à busca, se ele existir, para máxima precisão.
-                if (card.set && card.set.name) {
-                    searchString += ` ${card.set.name}`;
+
+                // Adiciona a numeração exata (ex: "008/182") se os dados existirem, para máxima precisão.
+                if (card.number && card.set && card.set.printedTotal) {
+                    const paddedNumber = String(card.number).padStart(3, '0');
+                    searchString += ` (${paddedNumber}/${card.set.printedTotal})`;
                 }
 
                 // Links para cada plataforma com a busca ultra específica
-                const mercadoLivreLink = `${affiliateConfig.mercadolivre.baseUrl}${encodeURIComponent(`${searchString} Carta Pokémon`)}`;
+                const mercadoLivreLink = `${affiliateConfig.mercadolivre.baseUrl}${encodeURIComponent(`${searchString} Pokémon`)}`;
                 const amazonLink = `https://www.amazon.com.br/s?k=${encodeURIComponent(`${searchString} Pokémon TCG`)}&tag=${affiliateConfig.amazon.tag}`;
-
+                
                 // Cria o elemento DIV que conterá o card
                 const cardElement = document.createElement('div');
                 cardElement.className = "bg-gray-800 p-3 rounded-lg flex flex-col items-center text-center collection-card";
@@ -185,7 +186,6 @@
                     setInfoHTML = `<div class="text-xs text-gray-400 flex items-center justify-center gap-1.5 mt-1"><span>${card.set.name}</span> ${symbolImg} <span>#${card.number}</span></div>`;
                 }
                 
-                // O HTML com os dois botões, que agora levarão a buscas muito mais precisas
                 cardElement.innerHTML = `
                     <img src="${card.images.large}" alt="${card.name}" class="rounded w-full mb-2 card-image-zoom">
                     <p class="font-bold text-sm text-white">${card.name}</p>
@@ -205,7 +205,7 @@
                 
                 return cardElement;
             }
-
+        
         //
         document.addEventListener('DOMContentLoaded', async () => {
             const firebaseConfig = {
