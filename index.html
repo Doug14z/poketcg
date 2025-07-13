@@ -381,7 +381,7 @@
                     let priceData = card.tcgplayer.prices[finish];
                     
                     if (!priceData && finish === 'normal') {
-                        priceData = card.tcgplayer.prices['unlimited'];
+                        priceData = card.tcgplayer.prices['unlimited'] || card.tcgplayer.prices['1stEditionNormal'];
                     }
 
                     if (priceData) {
