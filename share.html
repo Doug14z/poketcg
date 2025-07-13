@@ -25,11 +25,10 @@
         .group-header-wrapper { background-color: #374151; padding: 0.75rem 1rem; border-radius: 8px; margin-top: 1rem; cursor: pointer; transition: background-color 0.2s; }
         .group-header-wrapper:hover { background-color: #4b5563; }
         
-        /* Ajuste no logo da edição para melhor visualização */
         .set-logo {
-            height: 60px; /* Altura ajustada */
-            width: auto;   /* Largura automática para manter proporção */
-            max-width: 150px; /* Largura máxima */
+            height: 60px;
+            width: auto;
+            max-width: 150px;
             object-fit: contain;
             flex-shrink: 0;
         }
@@ -52,6 +51,7 @@
         <header class="text-center mb-8">
             <h1 id="collection-title" class="text-2xl md:text-3xl font-bold text-white">Carregando coleção...</h1>
             <p id="collection-subtitle" class="text-lg text-yellow-400 mt-2" style="font-family: 'Poppins', sans-serif;"></p>
+            <div id="contact-container" class="mt-4"></div>
         </header>
 
         <main>
@@ -152,6 +152,18 @@
                 title.textContent = `Coleção de ${ownerName}`;
                 subtitle.textContent = listType === 'trade' ? "Itens para Troca / Venda" : "Coleção Completa";
 
+                const socialLink = profileSnap.data().socialLink;
+                if (socialLink) {
+                    const contactContainer = document.getElementById('contact-container');
+                    const contactButton = document.createElement('a');
+                    contactButton.href = socialLink;
+                    contactButton.target = '_blank';
+                    contactButton.rel = 'noopener noreferrer';
+                    contactButton.className = 'inline-block bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-full transition-colors text-sm';
+                    contactButton.innerHTML = `<span class="flex items-center gap-2">Contatar Colecionador <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z" /><path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z" /></svg></span>`;
+                    contactContainer.appendChild(contactButton);
+                }
+
                 const baseCollectionRef = collection(db, `users/${userId}/tcg-collection`);
                 const finalQuery = listType === 'trade' 
                     ? query(baseCollectionRef, where("quantityForTrade", ">", 0))
@@ -215,7 +227,6 @@
                     allCards.forEach(card => collectionContainer.appendChild(createCardElement(card, groupBy)));
                 
                 } else if (groupBy === 'edition') {
-                    // LÓGICA DE AGRUPAMENTO POR EDIÇÃO RESTAURADA
                     collectionContainer.className = 'flex flex-col gap-2';
                     const grouped = {};
                     allCards.forEach(card => {
