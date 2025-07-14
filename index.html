@@ -923,7 +923,7 @@
             document.querySelectorAll('.copy-link-btn').forEach(button => button.addEventListener('click', () => { if (publicToggle.checked) { document.getElementById(button.dataset.target).select(); document.execCommand('copy'); copyFeedback.textContent = 'Link copiado!'; setTimeout(() => { copyFeedback.textContent = '' }, 2000); } }));
             [detailsModalCloseBtn, profileModalCloseBtn, shareModalCloseBtn].forEach(btn => btn.addEventListener('click', () => btn.closest('.modal-overlay').style.display = 'none'));
 
-            const firebaseConfig = { apiKey: "AIzaSyDZTXYGAHje-ZFnnhoiNwEUkNAmq63tY68", authDomain: "pokemtcgcard.firebaseapp.com", projectId: "pokemtcgcard", storageBucket: "pokemtcgcard.appspot.com", messagingSenderId: "1056735056128", appId: "1:1056735056128:web:d47f0474b925246c0de3e5", measurementId: "G-JBPHZ0EQWC" };
+            const firebaseConfig = { apiKey: "AIzaSyDZTXYGAHje-ZFnnhoiNwEUkNAmq63tY68", authDomain: "pokemtcgcard.firebaseapp.com", projectId: "pokemtcgcard", storageBucket: "pokemtcgcard.firebasestorage.app", messagingSenderId: "1056735056128", appId: "1:1056735056128:web:d47f0474b925246c0de3e5", measurementId: "G-JBPHZ0EQWC" };
             const app = initializeApp(firebaseConfig);
             auth = getAuth(app);
             db = getFirestore(app);
