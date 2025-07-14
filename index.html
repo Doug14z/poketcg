@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
+        
        <meta name="google-adsense-account" content="ca-pub-6237795768866700">
         body { 
             font-family: 'Poppins', sans-serif; 
@@ -73,6 +74,66 @@
         input[type="radio"] {
             accent-color: #f59e0b;
         }
+
+        /*
+ ===============================================
+  NOVOS ESTILOS PARA DEIXAR O SITE MAIS BONITO
+ ===============================================
+*/
+
+/* 1. Fundo Repetitivo Estilo Pokémon */
+body {
+    /* O background-color é um fallback, caso a imagem não carregue */
+    background-color: #111827;
+    /* Este é um SVG embutido como imagem. É um padrão de pixel art sutil e escuro.
+      É super leve e não requer o carregamento de um arquivo externo.
+    */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 8 8'%3E%3Cg fill='%231f2937' fill-opacity='0.4'%3E%3Cpath fill-rule='evenodd' d='M0 0h4v4H0V0zm4 4h4v4H4V4z'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* 2. Efeito "Vidro Fosco" (Glassmorphism) para os Modais */
+.modal-content {
+    /* Deixamos o fundo do modal semi-transparente */
+    background-color: rgba(31, 41, 55, 0.85); /* #1f2937 com 85% de opacidade */
+    
+    /* O backdrop-filter já estava no seu .modal-overlay, garantindo o desfoque do fundo.
+       Esta combinação cria o efeito de vidro. */
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    
+    /* Uma borda sutil para definir melhor o contorno do modal */
+    border: 1px solid rgba(55, 65, 81, 0.6);
+}
+
+/* 3. Efeitos de Brilho (Glow) Interativos */
+
+/* Brilho amarelo para botões principais de ação */
+#search-button:hover,
+.open-add-modal-btn:hover {
+    box-shadow: 0 0 15px 2px rgba(245, 158, 11, 0.6); /* Cor #f59e0b */
+    transition: box-shadow 0.3s ease-in-out;
+}
+
+/* Brilho azul para o botão de Login/Criar Conta */
+#open-auth-modal-btn:hover {
+    box-shadow: 0 0 15px 2px rgba(59, 130, 246, 0.6); /* Cor do botão azul */
+    transition: box-shadow 0.3s ease-in-out;
+}
+
+/* Efeito de borda brilhante e elevação nas cartas da coleção ao passar o mouse */
+#my-collection .collection-card:hover {
+    transform: translateY(-5px) scale(1.03);
+    box-shadow: 0 0 20px 5px rgba(59, 130, 246, 0.3); /* Um brilho azul suave */
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    z-index: 10; /* Garante que a carta com hover fique por cima das outras */
+}
+
+/* Ajuste para que a transição original do card-item não seja sobrescrita */
+.card-item:hover {
+    transform: scale(1.05); /* Mantém o seu efeito original */
+}
+    
+    
     </style>
 </head>
 <body class="bg-gray-900 text-gray-100">
