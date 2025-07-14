@@ -782,9 +782,16 @@
                 let totalCards = 0, totalValue = 0;
                 const allCards = Array.from(collectionData.values());
                 allCards.forEach(card => {
-                    totalCards += card.quantityTotal;
-                    totalValue += (card.acquiredPrice || 0) * card.quantityTotal;
-                });
+    totalCards += card.quantityTotal;
+
+    // A LINHA CRUCIAL DA CORREÇÃO ESTÁ AQUI:
+    // Verificamos se 'acquiredPrice' NÃO é NaN antes de somar.
+    // Se for NaN ou indefinido, somamos 0 ao valor total.
+    const price = card.acquiredPrice;
+    if (price && !isNaN(price)) {
+        totalValue += price * card.quantityTotal;
+    }
+});
                 const ownedPokedexNumbers = new Set(allCards.map(c => c.pokedexNumber).filter(Boolean));
                 const pokedexPercentage = (ownedPokedexNumbers.size / 1025) * 100;
                 const fill = document.getElementById('pokedex-progress-fill');
