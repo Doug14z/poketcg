@@ -711,7 +711,7 @@
                 const cardData = {
                     id: card.id, name: card.name, image: card.images.small,
                     set: { id: card.set.id, name: card.set.name, series: card.set.series, printedTotal: card.set.printedTotal, total: card.set.total, releaseDate: card.set.releaseDate, images: { symbol: card.set.images.symbol, logo: card.set.images.logo } },
-                    number: card.number, quality: quality, finish: getFinishDisplayName(finishKey), acquiredPrice: parseFloat(addCardForm.dataset.currentPrice),
+                    number: card.number, quality: quality, finish: getFinishDisplayName(finishKey), acquiredPrice: parseFloat(String(addCardForm.dataset.currentPrice).replace(',', '.')),
                     pokedexNumber: card.nationalPokedexNumbers?.[0] || null, language: document.getElementById('language').value
                 };
                 if (!currentUserId) return;
@@ -826,11 +826,17 @@
                 allCards.forEach(card => myCollectionContainer.appendChild(createCardElement(card)));
             };
 
-            // NOVA FUNÇÃO createCardElement para o layout 2.0
+            // NOVA // NOVA FUNÇÃO createCardElement ATUALIZADA
             const createCardElement = (card) => {
                 const cardElement = document.createElement('div');
                 cardElement.className = 'collection-card cursor-pointer';
                 cardElement.dataset.id = card.docId;
+
+                // Formata o preço individual para exibição
+                const cardPrice = (card.acquiredPrice || 0).toLocaleString('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL'
+                });
 
                 const cardHTML = `
                     <div class="card-inner">
@@ -840,6 +846,9 @@
                             <img src="${card.set.images.symbol}" alt="Set Symbol">
                             <span>#${String(card.number).padStart(3, '0')}</span>
                         </div>
+                        
+                        <p class="font-bold text-yellow-400 text-sm mt-2">${cardPrice}</p>
+
                         <div class="card-controls">
                             <div class="control-group">
                                 <div class="text-left">
