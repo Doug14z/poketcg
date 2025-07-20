@@ -96,7 +96,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
-        import { getFirestore, doc, getDoc, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, collection, getDocs, query, where, orderBy } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
 
         document.addEventListener('DOMContentLoaded', async () => {
             const firebaseConfig = {
@@ -145,24 +145,23 @@
                 title.textContent = `${ownerName}`;
                 
                 let finalQuery;
-                let collectionName = 'tcg-collection';
-
+                
                 if (listType === 'sale') {
                     subtitle.textContent = "Itens para Venda";
-                    finalQuery = query(collection(db, `users/${userId}/${collectionName}`), where("quantityForSale", ">", 0));
+                    finalQuery = query(collection(db, `users/${userId}/tcg-collection`), where("quantityForSale", ">", 0));
                 } else if (listType === 'wishlist') {
                     subtitle.textContent = "Lista de Desejos";
-                    collectionName = 'tcg-wishlist';
-                    finalQuery = query(collection(db, `users/${userId}/${collectionName}`));
+                    finalQuery = query(collection(db, `users/${userId}/tcg-wishlist`), orderBy("addedAt", "desc"));
                 } else {
                     subtitle.textContent = "Coleção Completa";
-                    finalQuery = query(collection(db, `users/${userId}/${collectionName}`));
+                    finalQuery = query(collection(db, `users/${userId}/tcg-collection`));
                 }
 
 
                 const socialLink = profileSnap.data().socialLink;
                 if (socialLink) {
                     const contactContainer = document.getElementById('contact-container');
+                    const contactButton = document.createElement('a');
                     contactButton.href = socialLink;
                     contactButton.target = '_blank';
                     contactButton.rel = 'noopener noreferrer';
@@ -454,7 +453,7 @@
                         <img src="${card.image || card.images.small}" alt="${card.name}" class="rounded w-full mb-2 aspect-[5/7] object-cover">
                         <p class="font-bold text-sm">${card.name}</p>
                         <div class="text-xs text-gray-400 flex items-center justify-center gap-1.5 mt-1">
-                            <img src="${card.set.images.symbol}" class="h-4" alt="Set Symbol">
+                            <img src="${card.set.images.symbol}" class="h-4" alt="Set Symbol"> 
                             <span>#${String(card.number).padStart(3, '0')}</span>
                         </div>
                     `;
