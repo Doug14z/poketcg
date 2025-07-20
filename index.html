@@ -66,37 +66,6 @@
             text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
         }
         
-        /* Estilos para as Abas */
-        .tab-button {
-            padding: 0.5rem 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background-color 0.2s, color 0.2s;
-            background-color: #374151;
-            color: #d1d5db;
-            border: 2px solid #374151;
-            border-bottom: 0;
-        }
-        .tab-button:first-child {
-            border-radius: 8px 0 0 0;
-        }
-        .tab-button:last-child {
-            border-radius: 0 8px 0 0;
-        }
-        .tab-button.active {
-            background-color: #1f2937;
-            border-color: #4b5563;
-            color: #f59e0b;
-        }
-        .tab-content {
-            background-color: #1f2937;
-            padding: 1rem;
-            border-radius: 0 8px 8px 8px;
-            border: 2px solid #4b5563;
-            border-top: none;
-        }
-
-
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #2d3748; }
         ::-webkit-scrollbar-thumb { background: #4a5568; border-radius: 4px; }
@@ -159,14 +128,10 @@
             const profileNameInput = document.getElementById('profile-name');
             const profileFeedback = document.getElementById('profile-feedback');
             const toastNotification = document.getElementById('toast-notification');
-
-            // --- ELEMENTOS WISHLIST ---
-            const showCollectionTab = document.getElementById('show-collection-tab');
-            const showWishlistTab = document.getElementById('show-wishlist-tab');
-            const collectionSection = document.getElementById('collection-section');
-            const wishlistSection = document.getElementById('wishlist-section');
-            const myWishlistContainer = document.getElementById('my-wishlist');
-            const wishlistLoader = document.getElementById('wishlist-loader');
+            const myCollectionContainer = document.getElementById('my-collection');
+            const rightColumn = document.getElementById('right-column');
+            const collectionHeaderInfo = document.getElementById('collection-header-info');
+            const collectionTitle = document.getElementById('collection-title');
 
             // Variáveis de estado
             let currentUserId = null;
@@ -184,24 +149,6 @@
                     toastNotification.classList.add('opacity-0', 'translate-y-24');
                 }, 3000);
             };
-
-            // Lógica dos Tabs (Coleção / Wishlist)
-            showCollectionTab.addEventListener('click', () => {
-                showCollectionTab.classList.add('active');
-                showWishlistTab.classList.remove('active');
-                collectionSection.classList.remove('hidden');
-                wishlistSection.classList.add('hidden');
-            });
-
-            showWishlistTab.addEventListener('click', () => {
-                showWishlistTab.classList.add('active');
-                showCollectionTab.classList.remove('active');
-                wishlistSection.classList.remove('hidden');
-                collectionSection.classList.add('hidden');
-                if (currentUserId) {
-                    loadMyWishlist();
-                }
-            });
 
             profileButton.addEventListener('click', async () => {
                 if (auth.currentUser) {
@@ -504,60 +451,73 @@
                 detailsModal.style.display = 'flex';
             };
 
-            const handleCollectionClick = async (e) => {
+            const handleCardGridClick = async (e) => {
                 const target = e.target;
                 const action = target.dataset.action;
                 const docId = target.dataset.id;
-
-                if (target.closest('[data-action="details"]')) {
-                    const cardContainer = target.closest('.collection-card');
-                    openDetailsModal(cardContainer.dataset.id);
+                
+                if (!action || !docId) {
+                     if (target.closest('[data-action="details"]')) {
+                        const cardContainer = target.closest('.collection-card');
+                        openDetailsModal(cardContainer.dataset.id);
+                     }
                     return;
                 }
 
-                if (action && docId) {
-                    if (!currentUserId) return;
-                    const cardRef = doc(db, `users/${currentUserId}/tcg-collection`, docId);
-                    const card = collectionData.get(docId);
+                if (!currentUserId) return;
 
-                    switch (action) {
-                        case 'total-plus':
-                            await updateDoc(cardRef, { quantityTotal: increment(1) });
-                            break;
-                        case 'total-minus':
-                            if (card.quantityTotal > 1 && card.quantityTotal > (card.quantityForSale || 0)) {
-                                await updateDoc(cardRef, { quantityTotal: increment(-1) });
-                            } else if (card.quantityTotal === 1 && (card.quantityForSale || 0) === 0) {
-                                if (confirm(`Tem a certeza que quer remover todas as cópias de ${card.name} da coleção?`)) {
-                                    await deleteDoc(cardRef);
+                const currentView = groupBySelect.value;
+                if (currentView === 'wishlist') {
+                     if (action === 'remove-wishlist') {
+                        if (confirm(`Tem certeza que quer remover esta carta da sua lista de desejos?`)) {
+                             await deleteDoc(doc(db, `users/${currentUserId}/tcg-wishlist`, docId));
+                             showToast(`Carta removida da lista de desejos.`);
+                        }
+                     }
+                    return;
+                }
+                
+                // Lógica para a coleção
+                const cardRef = doc(db, `users/${currentUserId}/tcg-collection`, docId);
+                const card = collectionData.get(docId);
+
+                switch (action) {
+                    case 'total-plus':
+                        await updateDoc(cardRef, { quantityTotal: increment(1) });
+                        break;
+                    case 'total-minus':
+                        if (card.quantityTotal > 1 && card.quantityTotal > (card.quantityForSale || 0)) {
+                            await updateDoc(cardRef, { quantityTotal: increment(-1) });
+                        } else if (card.quantityTotal === 1 && (card.quantityForSale || 0) === 0) {
+                            if (confirm(`Tem a certeza que quer remover todas as cópias de ${card.name} da coleção?`)) {
+                                await deleteDoc(cardRef);
+                            }
+                        }
+                        break;
+                    case 'sale-plus':
+                        if ((card.quantityForSale || 0) < card.quantityTotal) {
+                            let updateData = { quantityForSale: increment(1) };
+                            if (!card.salePrice) {
+                                const priceInput = prompt(`Defina o preço de venda para ${card.name} (use . para centavos, ex: 25.50):`);
+                                const price = parseFloat(priceInput);
+                                if (priceInput !== null && !isNaN(price) && price > 0) {
+                                    updateData.salePrice = price;
+                                } else if (priceInput !== null) {
+                                    alert("Valor inválido. A carta será adicionada à lista de venda sem preço.");
                                 }
                             }
-                            break;
-                        case 'sale-plus':
-                            if ((card.quantityForSale || 0) < card.quantityTotal) {
-                                let updateData = { quantityForSale: increment(1) };
-                                if (!card.salePrice) {
-                                    const priceInput = prompt(`Defina o preço de venda para ${card.name} (use . para centavos, ex: 25.50):`);
-                                    const price = parseFloat(priceInput);
-                                    if (priceInput !== null && !isNaN(price) && price > 0) {
-                                        updateData.salePrice = price;
-                                    } else if (priceInput !== null) {
-                                        alert("Valor inválido. A carta será adicionada à lista de venda sem preço.");
-                                    }
-                                }
-                                await updateDoc(cardRef, updateData);
+                            await updateDoc(cardRef, updateData);
+                        }
+                        break;
+                    case 'sale-minus':
+                        if ((card.quantityForSale || 0) > 0) {
+                            let updateData = { quantityForSale: increment(-1) };
+                            if (card.quantityForSale === 1) {
+                                updateData.salePrice = null;
                             }
-                            break;
-                        case 'sale-minus':
-                            if ((card.quantityForSale || 0) > 0) {
-                                let updateData = { quantityForSale: increment(-1) };
-                                if (card.quantityForSale === 1) {
-                                    updateData.salePrice = null; // Remove o preço quando a última cópia à venda é removida
-                                }
-                                await updateDoc(cardRef, updateData);
-                            }
-                            break;
-                    }
+                            await updateDoc(cardRef, updateData);
+                        }
+                        break;
                 }
             };
 
@@ -567,57 +527,44 @@
                 collectionPrompt.classList.add('hidden');
                 const collectionRef = collection(db, `users/${currentUserId}/tcg-collection`);
                 collectionUnsubscribe = onSnapshot(collectionRef, (snapshot) => {
-                    collectionLoader.classList.add('hidden');
                     collectionData.clear();
-
                     snapshot.docs.forEach(doc => {
                         const card = doc.data();
                         if (card.quantity !== undefined && card.quantityTotal === undefined) { card.quantityTotal = card.quantity; }
                         if (card.quantityForSale === undefined) { card.quantityForSale = card.quantityForTrade || 0; }
                         collectionData.set(doc.id, { ...card, docId: doc.id });
                     });
-                    renderCollection();
-                }, (error) => {
-                    console.error("Erro ao carregar a coleção:", error);
-                    collectionLoader.classList.add('hidden');
-                });
+                    if (groupBySelect.value !== 'wishlist') {
+                        renderCollection();
+                    }
+                }, (error) => console.error("Erro ao carregar a coleção:", error));
             };
             
             const loadMyWishlist = () => {
                 if (!currentUserId || wishlistUnsubscribe) return;
-                wishlistLoader.classList.remove('hidden');
+                collectionLoader.classList.remove('hidden');
                 const wishlistRef = collection(db, `users/${currentUserId}/tcg-wishlist`);
                 wishlistUnsubscribe = onSnapshot(wishlistRef, (snapshot) => {
-                    wishlistLoader.classList.add('hidden');
                     wishlistData.clear();
                     snapshot.docs.forEach(doc => {
                         wishlistData.set(doc.id, { ...doc.data(), docId: doc.id });
                     });
-                    renderWishlist();
-                }, (error) => {
-                    console.error("Erro ao carregar a wishlist:", error);
-                    wishlistLoader.classList.add('hidden');
-                });
+                    if (groupBySelect.value === 'wishlist') {
+                        renderWishlist();
+                    }
+                }, (error) => console.error("Erro ao carregar a wishlist:", error));
             };
 
             const renderCollection = () => {
-                const container = document.getElementById('my-collection');
-                const overallProgressSection = document.getElementById('overall-progress-section');
-                const controlsSection = document.getElementById('collection-controls');
-                
-                container.innerHTML = '';
+                collectionLoader.classList.add('hidden');
+                myCollectionContainer.innerHTML = '';
                 if (collectionData.size === 0) {
-                    container.innerHTML = `<p class="text-center text-gray-400 col-span-full py-10">A sua coleção está vazia.</p>`;
+                    myCollectionContainer.innerHTML = `<p class="text-center text-gray-400 col-span-full py-10">A sua coleção está vazia.</p>`;
                     collectionCount.textContent = 0;
                     uniqueCollectionCount.textContent = 0;
-                    overallProgressSection.classList.add('hidden');
-                    controlsSection.classList.add('hidden');
                     return;
                 }
                 
-                overallProgressSection.classList.remove('hidden');
-                controlsSection.classList.remove('hidden');
-
                 const TOTAL_POKEMON = 1025;
                 let totalCards = 0;
                 const allCards = Array.from(collectionData.values());
@@ -641,7 +588,7 @@
                 const groupBy = groupBySelect.value;
                 if (groupBy === 'pokedex') {
                      allCards.sort((a, b) => (a.pokedexNumber || 9999) - (b.pokedexNumber || 9999));
-                    allCards.forEach(card => container.appendChild(createCardElement(card, groupBy)));
+                    allCards.forEach(card => myCollectionContainer.appendChild(createCardElement(card, groupBy)));
                 } else {
                     const grouped = {};
                     allCards.forEach(card => {
@@ -675,24 +622,39 @@
                         progressBarContainer.appendChild(progressBarText);
                         headerWrapper.appendChild(groupHeader);
                         headerWrapper.appendChild(progressBarContainer);
-                        container.appendChild(headerWrapper);
+                        myCollectionContainer.appendChild(headerWrapper);
                         cardsInGroup.sort((a, b) => (parseInt(String(a.number).replace(/[^0-9]/g, '')) || 0) - (parseInt(String(b.number).replace(/[^0-9]/g, '')) || 0))
-                            .forEach(card => container.appendChild(createCardElement(card, groupBy)));
+                            .forEach(card => myCollectionContainer.appendChild(createCardElement(card, groupBy)));
                     }
                 }
             };
 
             const renderWishlist = () => {
-                myWishlistContainer.innerHTML = '';
+                collectionLoader.classList.add('hidden');
+                myCollectionContainer.innerHTML = '';
                 if (wishlistData.size === 0) {
-                    myWishlistContainer.innerHTML = `<p class="text-center text-gray-400 col-span-full py-10">Sua lista de desejos está vazia.</p>`;
+                    myCollectionContainer.innerHTML = `<p class="text-center text-gray-400 col-span-full py-10">Sua lista de desejos está vazia.</p>`;
                     return;
                 }
                 const allWishlistCards = Array.from(wishlistData.values()).sort((a, b) => (a.pokedexNumber || 9999) - (b.pokedexNumber || 9999));
                 allWishlistCards.forEach(card => {
-                    myWishlistContainer.appendChild(createWishlistCardElement(card));
+                    myCollectionContainer.appendChild(createWishlistCardElement(card));
                 });
             };
+            
+            groupBySelect.addEventListener('change', () => {
+                const selectedView = groupBySelect.value;
+                if (selectedView === 'wishlist') {
+                    collectionTitle.textContent = "Lista de Desejos";
+                    collectionHeaderInfo.classList.add('hidden');
+                    loadMyWishlist(); // Garante que os dados estão carregados
+                    renderWishlist();
+                } else {
+                    collectionTitle.textContent = "Minha Coleção";
+                    collectionHeaderInfo.classList.remove('hidden');
+                    renderCollection();
+                }
+            });
 
             const createWishlistCardElement = (card) => {
                 const cardElement = document.createElement('div');
@@ -709,18 +671,6 @@
                 `;
                 return cardElement;
             };
-
-            myWishlistContainer.addEventListener('click', async (e) => {
-                 const target = e.target;
-                 if (target.dataset.action === 'remove-wishlist') {
-                     const cardId = target.dataset.id;
-                     if (confirm(`Tem certeza que quer remover esta carta da sua lista de desejos?`)) {
-                         await deleteDoc(doc(db, `users/${currentUserId}/tcg-wishlist`, cardId));
-                         showToast(`Carta removida da lista de desejos.`);
-                     }
-                 }
-            });
-
 
             const createCardElement = (card, groupBy) => {
                 const qualityClasses = { 'Nova': 'bg-green-600 text-white', 'Pouco Usada': 'bg-yellow-500 text-gray-900', 'Usada': 'bg-red-600 text-white' };
@@ -830,8 +780,7 @@
             addCardForm.addEventListener('submit', handleAddFormSubmit);
             addCardModalCloseBtn.addEventListener('click', () => addCardModal.style.display = 'none');
             detailsModalCloseBtn.addEventListener('click', () => detailsModal.style.display = 'none');
-            document.getElementById('my-collection').addEventListener('click', handleCollectionClick);
-            groupBySelect.addEventListener('change', renderCollection);
+            myCollectionContainer.addEventListener('click', handleCardGridClick);
             openAuthModalBtn.addEventListener('click', () => authModal.style.display = 'flex');
             authModalCloseBtn.addEventListener('click', () => authModal.style.display = 'none');
             showRegisterBtn.addEventListener('click', () => { loginTab.classList.add('hidden'); registerTab.classList.remove('hidden'); });
@@ -881,24 +830,24 @@
                         userEmailDisplay.textContent = user.displayName || user.email;
                         loggedInHeader.classList.remove('hidden');
                         loggedOutHeader.classList.add('hidden');
-                        document.getElementById('tabs-container').classList.remove('hidden');
+                        rightColumn.classList.remove('hidden');
                         collectionPrompt.classList.add('hidden');
-                        showCollectionTab.click(); // Garante que a aba da coleção seja a padrão
+                        groupBySelect.value = 'edition';
+                        groupBySelect.dispatchEvent(new Event('change'));
                         loadMyCollection();
+                        loadMyWishlist();
                     } else {
                         currentUserId = null;
                         loggedInHeader.classList.add('hidden');
                         loggedOutHeader.classList.remove('hidden');
-                        document.getElementById('tabs-container').classList.add('hidden');
-                        collectionSection.classList.add('hidden');
-                        wishlistSection.classList.add('hidden');
+                        rightColumn.classList.add('hidden');
                         collectionPrompt.classList.remove('hidden');
                         collectionPrompt.innerHTML = '<p class="text-gray-400">Faça login para ver e gerir a sua coleção.</p>';
                     }
                 });
             } catch (error) {
                 console.error("ERRO CRÍTICO NA INICIALIZAÇÃO DO FIREBASE:", error);
-                document.getElementById('right-column').innerHTML = `<p class="text-center text-red-400 p-4 bg-red-900/50 rounded-lg">Não foi possível carregar os dados.</p>`;
+                rightColumn.innerHTML = `<p class="text-center text-red-400 p-4 bg-red-900/50 rounded-lg">Não foi possível carregar os dados.</p>`;
             }
         });
     </script>
@@ -948,50 +897,41 @@
                     <div id="loader" class="loader mx-auto hidden"></div>
                     <div id="search-results" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4"></div>
                 </section>
-                <section id="right-column">
-                    <div id="collection-prompt" class="text-center p-8 bg-gray-800 rounded-lg"></div>
-
-                    <div id="tabs-container" class="hidden">
-                        <div class="flex">
-                           <button id="show-collection-tab" class="tab-button active">Minha Coleção</button>
-                           <button id="show-wishlist-tab" class="tab-button">Lista de Desejos</button>
-                        </div>
-                        
-                        <div id="collection-section" class="tab-content">
-                            <div class="flex justify-between items-center mb-4 flex-wrap gap-4">
-                                <h2 class="text-xl font-bold">Resumo da Coleção</h2>
-                                <div class="text-right" style="font-family: 'Poppins', sans-serif;">
-                                    <p class="font-semibold text-base"><span id="collection-count">0</span> Cartas (<span id="unique-collection-count">0</span> Únicas)</p>
-                                </div>
-                            </div>
-                            <div id="overall-progress-section" class="mb-6 hidden">
-                                <h3 class="text-lg font-bold mb-2 text-center" style="font-family: 'Poppins', sans-serif;">Progresso da Pokédex Nacional</h3>
-                                <div class="progress-bar-container">
-                                    <div id="pokedex-progress-fill" class="progress-bar-fill"></div>
-                                    <span id="pokedex-progress-text" class="progress-bar-text">0/1025</span>
-                                </div>
-                            </div>
-                            <div id="collection-controls" class="flex justify-between items-center mb-4 hidden" style="font-family: 'Poppins', sans-serif;">
-                                <div>
-                                    <label for="group-by-select" class="text-sm font-semibold mr-2">Organizar por:</label>
-                                    <select id="group-by-select" class="bg-gray-700 border border-gray-600 rounded-lg px-3 py-1 text-sm">
-                                        <option value="edition">Edição</option>
-                                        <option value="pokedex">Pokédex</option>
-                                    </select>
-                                </div>
-                                <button id="share-collection-btn" class="hidden bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors text-sm">Compartilhar</button>
-                            </div>
-                            <div id="collection-loader" class="loader mx-auto hidden"></div>
-                            <div id="my-collection" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-h-[60vh] overflow-y-auto pr-2"></div>
-                        </div>
-
-                        <div id="wishlist-section" class="tab-content hidden">
-                           <h2 class="text-xl font-bold mb-4">Minha Lista de Desejos</h2>
-                           <div id="wishlist-loader" class="loader mx-auto hidden"></div>
-                           <div id="my-wishlist" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-h-[60vh] overflow-y-auto pr-2"></div>
+                <section id="right-column" class="hidden">
+                     <div class="flex justify-between items-center mb-4 flex-wrap gap-4 border-b-2 border-blue-500 pb-2">
+                        <h2 id="collection-title" class="text-2xl font-bold">Minha Coleção</h2>
+                         <div>
+                            <select id="group-by-select" class="bg-gray-700 border border-gray-600 rounded-lg px-3 py-1 text-sm font-semibold" style="font-family: 'Poppins', sans-serif;">
+                                <option value="edition">Edição</option>
+                                <option value="pokedex">Pokédex</option>
+                                <option value="wishlist">Lista de Desejos</option>
+                            </select>
                         </div>
                     </div>
+                    
+                    <div id="collection-header-info">
+                         <div class="flex justify-between items-center mb-4 flex-wrap gap-4">
+                            <h3 class="text-xl font-bold">Resumo</h3>
+                            <div class="text-right" style="font-family: 'Poppins', sans-serif;">
+                                <p class="font-semibold text-base"><span id="collection-count">0</span> Cartas (<span id="unique-collection-count">0</span> Únicas)</p>
+                            </div>
+                        </div>
+                        <div id="overall-progress-section" class="mb-6">
+                            <h3 class="text-lg font-bold mb-2 text-center" style="font-family: 'Poppins', sans-serif;">Progresso da Pokédex</h3>
+                            <div class="progress-bar-container">
+                                <div id="pokedex-progress-fill" class="progress-bar-fill"></div>
+                                <span id="pokedex-progress-text" class="progress-bar-text">0/1025</span>
+                            </div>
+                        </div>
+                        <div class="flex justify-end items-center mb-4">
+                             <button id="share-collection-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors text-sm">Compartilhar</button>
+                        </div>
+                    </div>
+
+                    <div id="collection-loader" class="loader mx-auto hidden"></div>
+                    <div id="my-collection" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-h-[60vh] overflow-y-auto pr-2"></div>
                 </section>
+                <div id="collection-prompt"></div>
             </main>
         </div>
         <footer class="text-center p-6 mt-8 border-t border-gray-700 text-xs" style="font-family: 'Poppins', sans-serif;">
