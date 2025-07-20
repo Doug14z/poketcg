@@ -524,6 +524,7 @@
             const loadMyCollection = () => {
                 if (!currentUserId || collectionUnsubscribe) return;
                 collectionLoader.classList.remove('hidden');
+                collectionPrompt.classList.add('hidden');
                 const collectionRef = collection(db, `users/${currentUserId}/tcg-collection`);
                 collectionUnsubscribe = onSnapshot(collectionRef, (snapshot) => {
                     collectionData.clear();
@@ -588,7 +589,7 @@
                 if (groupBy === 'pokedex') {
                      allCards.sort((a, b) => (a.pokedexNumber || 9999) - (b.pokedexNumber || 9999));
                     allCards.forEach(card => myCollectionContainer.appendChild(createCardElement(card, groupBy)));
-                } else { // edition
+                } else {
                     const grouped = {};
                     allCards.forEach(card => {
                         const key = card.set.name;
@@ -643,17 +644,15 @@
             
             groupBySelect.addEventListener('change', () => {
                 const selectedView = groupBySelect.value;
-                myCollectionContainer.innerHTML = ''; // Limpa a vista atual
-                collectionLoader.classList.remove('hidden');
-
                 if (selectedView === 'wishlist') {
                     collectionTitle.textContent = "Lista de Desejos";
                     collectionHeaderInfo.classList.add('hidden');
-                    loadMyWishlist(); 
+                    loadMyWishlist(); // Garante que os dados estão carregados
+                    renderWishlist();
                 } else {
                     collectionTitle.textContent = "Minha Coleção";
                     collectionHeaderInfo.classList.remove('hidden');
-                    loadMyCollection();
+                    renderCollection();
                 }
             });
 
@@ -901,13 +900,12 @@
                 <section id="right-column" class="hidden">
                      <div class="flex justify-between items-center mb-4 flex-wrap gap-4 border-b-2 border-blue-500 pb-2">
                         <h2 id="collection-title" class="text-2xl font-bold">Minha Coleção</h2>
-                         <div class="flex items-center gap-4">
-                             <select id="group-by-select" class="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm font-semibold" style="font-family: 'Poppins', sans-serif;">
+                         <div>
+                            <select id="group-by-select" class="bg-gray-700 border border-gray-600 rounded-lg px-3 py-1 text-sm font-semibold" style="font-family: 'Poppins', sans-serif;">
                                 <option value="edition">Edição</option>
                                 <option value="pokedex">Pokédex</option>
                                 <option value="wishlist">Lista de Desejos</option>
                             </select>
-                            <button id="share-collection-btn" class="hidden bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors text-sm">Compartilhar</button>
                         </div>
                     </div>
                     
@@ -924,6 +922,9 @@
                                 <div id="pokedex-progress-fill" class="progress-bar-fill"></div>
                                 <span id="pokedex-progress-text" class="progress-bar-text">0/1025</span>
                             </div>
+                        </div>
+                        <div class="flex justify-end items-center mb-4">
+                             <button id="share-collection-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors text-sm">Compartilhar</button>
                         </div>
                     </div>
 
