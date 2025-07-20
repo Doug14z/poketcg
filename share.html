@@ -142,7 +142,7 @@
                 }
 
                 const ownerName = profileSnap.data().ownerName || 'um Treinador';
-                title.textContent = `${ownerName}`;
+                title.textContent = `Coleção de ${ownerName}`;
                 
                 let finalQuery;
                 
@@ -156,7 +156,6 @@
                     subtitle.textContent = "Coleção Completa";
                     finalQuery = query(collection(db, `users/${userId}/tcg-collection`));
                 }
-
 
                 const socialLink = profileSnap.data().socialLink;
                 if (socialLink) {
