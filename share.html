@@ -143,7 +143,7 @@
 
                 const ownerName = profileSnap.data().ownerName || 'um Treinador';
                 title.textContent = `Coleção de ${ownerName}`;
-                subtitle.textContent = listType === 'trade' ? "Itens para Troca / Venda" : "Coleção Completa";
+                subtitle.textContent = listType === 'sale' ? "Itens para Venda" : "Coleção Completa";
 
                 const socialLink = profileSnap.data().socialLink;
                 if (socialLink) {
@@ -158,26 +158,22 @@
                 }
 
                 const baseCollectionRef = collection(db, `users/${userId}/tcg-collection`);
-                const finalQuery = listType === 'trade'
-                    ? query(baseCollectionRef, where("quantityForTrade", ">", 0))
+                const finalQuery = listType === 'sale'
+                    ? query(baseCollectionRef, where("quantityForSale", ">", 0))
                     : query(baseCollectionRef);
 
                 const collectionSnapshot = await getDocs(finalQuery);
 
                 if (collectionSnapshot.empty) {
                     loader.classList.add('hidden');
-                    const emptyMessage = listType === 'trade' ? 'Nenhuma carta disponível para troca no momento.' : 'Esta coleção está vazia.';
+                    const emptyMessage = listType === 'sale' ? 'Nenhuma carta disponível para venda no momento.' : 'Esta coleção está vazia.';
                     collectionContainer.innerHTML = `<p class="col-span-full text-center text-gray-400">${emptyMessage}</p>`;
                     return;
                 }
 
                 publicCollectionData = collectionSnapshot.docs.map(doc => {
                     const card = doc.data();
-                    if (card.quantity !== undefined && card.quantityTotal === undefined) {
-                        card.quantityTotal = card.quantity;
-                        card.quantityForTrade = 0;
-                    }
-                    if (card.quantityForTrade === undefined) card.quantityForTrade = 0;
+                    if (card.quantityForSale === undefined) card.quantityForSale = 0;
                     return { ...card, docId: doc.id };
                 });
 
@@ -454,8 +450,13 @@
                     </div>
                 `;
 
-                const quantityKey = listType === 'trade' ? 'quantityForTrade' : 'quantityTotal';
+                const quantityKey = listType === 'sale' ? 'quantityForSale' : 'quantityTotal';
                 const quantityToShow = card[quantityKey] || 0;
+                
+                let salePriceHTML = '';
+                if (listType === 'sale' && card.salePrice) {
+                    salePriceHTML = `<p class="text-lg font-bold text-green-400">R$ ${card.salePrice.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>`;
+                }
 
                 cardElement.innerHTML = `
                     ${pokedexInfo}
@@ -464,7 +465,8 @@
                     ${setInfoHTML}
                     ${tagsHTML}
                     <div class="mt-auto pt-2 text-center">
-                        ${quantityToShow > 0 ? `<span class="font-bold text-lg">${quantityToShow}x</span>` : ''}
+                        ${salePriceHTML}
+                        ${quantityToShow > 0 ? `<span class="font-bold text-lg text-gray-300">${quantityToShow}x disponível</span>` : ''}
                     </div>
                 `;
                 return cardElement;
