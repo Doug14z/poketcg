@@ -139,7 +139,8 @@
 
             // Variáveis de estado
             let currentUserId = null;
-            let searchCache = new Map();
+            let searchCache = new Map(); // Cache para detalhes das cartas exibidas na busca
+            let searchQueriesCache = new Map(); // <<< NOVO CACHE PARA OTIMIZAR BUSCAS >>>
             let collectionData = new Map();
             let wishlistData = new Map();
             let collectionUnsubscribe = null;
@@ -264,13 +265,13 @@
                 }
             };
 
-            searchTypeRadios.forEach(radio => radio.addEventListener('change', toggleSearchMode));
-
+            // <<< FUNÇÃO DE BUSCA MODIFICADA >>>
             const searchCards = async () => {
                 const searchType = document.querySelector('input[name="search-type"]:checked').value;
                 let searchTerm = '';
                 let query = '';
                 let postFilter = null;
+
                 if (searchType === 'set') {
                     searchTerm = setSelect.value;
                     if (!searchTerm) { alert('Por favor, selecione uma edição.'); return; }
@@ -292,15 +293,32 @@
                         query = `name:"${searchTerm}*"`;
                     }
                 }
+
+                const cacheKey = `${searchType}:${searchTerm}`;
+                
+                // 1. VERIFICAR O CACHE ANTES DE BUSCAR
+                if (searchQueriesCache.has(cacheKey)) {
+                    console.log(`Buscando "${searchTerm}" do cache.`);
+                    displaySearchResults(searchQueriesCache.get(cacheKey));
+                    return; // Encerra a função aqui, usando os dados do cache.
+                }
+
+                // Se não estiver no cache, continua com a busca normal...
+                console.log(`Buscando "${searchTerm}" da API.`);
                 loader.classList.remove('hidden');
                 searchResultsContainer.innerHTML = '';
-                searchCache.clear();
+                searchCache.clear(); 
+
                 try {
                     const response = await fetch(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(query)}`);
                     if (!response.ok) throw new Error('A resposta da rede não foi "ok".');
                     const data = await response.json();
                     let cardsToShow = data.data || [];
                     if (postFilter) cardsToShow = postFilter(cardsToShow);
+
+                    // 2. SALVAR O NOVO RESULTADO NO CACHE
+                    searchQueriesCache.set(cacheKey, cardsToShow);
+
                     displaySearchResults(cardsToShow);
                 } catch (error) {
                     console.error("Falha ao buscar cartas:", error);
@@ -868,7 +886,6 @@
             
                 <center><script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6237795768866700"
      crossorigin="anonymous"></script>
-<!-- TCG -->
 <ins class="adsbygoogle"
      style="display:block"
      data-ad-client="ca-pub-6237795768866700"
