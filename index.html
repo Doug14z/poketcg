@@ -453,13 +453,12 @@
                 addCardModal.style.display = 'none';
                 showToast(`<strong>${cardData.name}</strong> adicionado à coleção!`);
             }
-
-            // *** FUNÇÃO ATUALIZADA ***
+            
+            // *** FUNÇÃO ATUALIZADA COM MELHOR LOG DE ERRO ***
             const openDetailsModal = async (docId) => {
                 const card = collectionData.get(docId);
                 if (!card) return;
 
-                // --- Elementos do Modal ---
                 const detailsCardImage = document.getElementById('details-card-image');
                 const detailsCardName = document.getElementById('details-card-name');
                 const detailsCardSetInfo = document.getElementById('details-card-set-info');
@@ -467,10 +466,8 @@
                 const detailsCardFinish = document.getElementById('details-card-finish');
                 const extraDetailsContainer = document.getElementById('details-extra-info');
                 
-                // Limpa detalhes antigos e mostra um loader
                 extraDetailsContainer.innerHTML = '<div class="loader mx-auto"></div>';
 
-                // --- Preenchimento com dados base (Fallback) ---
                 detailsCardImage.src = card.image;
                 detailsCardName.textContent = card.name;
                 const releaseYear = new Date(card.set.releaseDate).getFullYear();
@@ -479,22 +476,23 @@
                 detailsCardFinish.textContent = card.finish;
                 detailsModal.style.display = 'flex';
 
-                // --- Busca e exibe dados enriquecidos da TCGdex ---
+                const lang = card.language === 'BR' ? 'pt' : 'en';
+                const apiUrl = `https://api.tcgdex.net/v2/${lang}/cards/${card.id}`;
+
                 try {
-                    const lang = card.language === 'BR' ? 'pt' : 'en';
-                    const tcgDexResponse = await fetch(`https://api.tcgdex.net/v2/${lang}/cards/${card.id}`);
-                    if (!tcgDexResponse.ok) throw new Error('Carta não encontrada na TCGdex.');
+                    const tcgDexResponse = await fetch(apiUrl);
+                    if (!tcgDexResponse.ok) {
+                        // Se a resposta não for OK (ex: 404 Not Found), lança um erro com o status
+                        throw new Error(`Status da resposta: ${tcgDexResponse.status}`);
+                    }
                     
                     const tcgDexCard = await tcgDexResponse.json();
 
-                    // Atualiza nome e imagem
                     detailsCardName.textContent = tcgDexCard.name;
                     detailsCardImage.src = `${tcgDexCard.image}/high.png`;
 
-                    // --- Renderiza os novos detalhes ---
                     let extraDetailsHTML = '';
 
-                    // Habilidade
                     if (tcgDexCard.ability) {
                         extraDetailsHTML += '<h4 class="font-bold mt-4 mb-2 text-yellow-400 border-b border-gray-600 pb-1">Habilidade</h4>';
                         extraDetailsHTML += `
@@ -505,7 +503,6 @@
                         `;
                     }
 
-                    // Ataques
                     if (tcgDexCard.attacks?.length > 0) {
                         extraDetailsHTML += `<h4 class="font-bold ${tcgDexCard.ability ? 'mt-4' : ''} mb-2 text-yellow-400 border-b border-gray-600 pb-1">Ataques</h4>`;
                         tcgDexCard.attacks.forEach(attack => {
@@ -521,7 +518,6 @@
                         });
                     }
 
-                    // Legalidade
                     if (tcgDexCard.legal) {
                         extraDetailsHTML += '<h4 class="font-bold mt-4 mb-2 text-yellow-400 border-b border-gray-600 pb-1">Legalidade</h4>';
                         extraDetailsHTML += `
@@ -532,7 +528,6 @@
                         `;
                     }
                     
-                    // Ilustrador
                     if (tcgDexCard.illustrator) {
                          extraDetailsHTML += `<p class="text-xs text-gray-500 mt-6 text-center">Ilustrador: ${tcgDexCard.illustrator}</p>`;
                     }
@@ -540,7 +535,9 @@
                     extraDetailsContainer.innerHTML = extraDetailsHTML;
 
                 } catch (error) {
-                    console.warn(`Não foi possível carregar dados da TCGdex para ${card.id}:`, error.message);
+                    // Log de erro aprimorado
+                    console.error(`Falha ao buscar da TCGdex. URL tentada: ${apiUrl}`);
+                    console.error("Detalhes do erro:", error);
                     extraDetailsContainer.innerHTML = '<p class="text-xs text-center text-gray-500">Não foi possível carregar detalhes extras da carta.</p>';
                 }
             };
