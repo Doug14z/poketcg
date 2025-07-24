@@ -408,19 +408,48 @@
             async function handleAddFormSubmit(e) {
                 e.preventDefault();
                 const cardId = addCardForm.dataset.cardId;
-                const card = searchCache.get(cardId);
+                const card = searchCache.get(cardId); // Pega a carta base (em inglês) do cache
                 const quality = addCardForm.quality.value;
                 const finishKey = addCardForm.finish.value;
                 const finishText = getFinishDisplayName(finishKey);
                 const quantityToAdd = parseInt(addCardForm.quantity.value, 10) || 1;
                 const language = document.getElementById('language').value;
 
+                // --- INÍCIO DA NOVA LÓGICA DE TRADUÇÃO ---
+
+                let cardNameToSave = card.name; // Por padrão, usa o nome em inglês
+
+                // Se o idioma escolhido for Português, tenta buscar o nome traduzido
+                if (language === 'BR') {
+                    try {
+                        console.log(`Buscando nome em PT para ${card.id}...`);
+                        const tcgDexResponse = await fetch(`https://api.tcgdex.net/v2/pt/cards/${card.id}`);
+                        if (tcgDexResponse.ok) {
+                            const tcgDexCard = await tcgDexResponse.json();
+                            if (tcgDexCard.name) {
+                                cardNameToSave = tcgDexCard.name; // Atualiza a variável com o nome em português
+                                console.log(`Nome encontrado: ${cardNameToSave}`);
+                            }
+                        } else {
+                            console.warn(`Carta ${card.id} não encontrada na TCGdex em português. Usando nome padrão.`);
+                        }
+                    } catch (error) {
+                        console.error("Erro ao buscar tradução na TCGdex:", error);
+                        // Se der erro, não faz nada e continua com o nome em inglês que já está na variável
+                    }
+                }
+
+                // --- FIM DA NOVA LÓGICA DE TRADUÇÃO ---
+
                 const cardData = {
-                    id: card.id, name: card.name, image: card.images.small,
+                    id: card.id, 
+                    name: cardNameToSave, // <-- USA A VARIÁVEL COM O NOME CORRETO (TRADUZIDO OU NÃO)
+                    image: card.images.small,
                     set: { id: card.set.id, name: card.set.name, series: card.set.series, printedTotal: card.set.printedTotal, total: card.set.total, releaseDate: card.set.releaseDate, images: { symbol: card.set.images.symbol, logo: card.set.images.logo } },
                     number: card.number, quality: quality, finish: finishText,
                     pokedexNumber: card.nationalPokedexNumbers ? card.nationalPokedexNumbers[0] : null,
                     language: language
+                    // O campo marketPrice foi removido conforme sua decisão
                 };
 
                 if (!currentUserId) return;
@@ -435,7 +464,7 @@
                 }
 
                 addCardModal.style.display = 'none';
-                showToast(`<strong>${card.name}</strong> adicionado à coleção!`);
+                showToast(`<strong>${cardData.name}</strong> adicionado à coleção!`);
             }
 
             const openDetailsModal = async (docId) => {
