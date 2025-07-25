@@ -98,6 +98,21 @@
             </div>
         </div>
     </div>
+    
+    <div id="shopping-list-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 500px;">
+             <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl">Lista de Compras</h2>
+                <button id="shopping-list-close-btn" class="text-4xl font-bold text-gray-400 hover:text-white transition-colors">&times;</button>
+            </div>
+            <textarea id="shopping-list-textarea" readonly class="w-full h-64 bg-gray-800 border border-gray-600 rounded-lg p-3 text-gray-200 text-sm whitespace-pre-wrap"></textarea>
+            <div class="mt-4 flex gap-4">
+                <button id="shopping-list-copy-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition-colors">Copiar Lista</button>
+                <button id="shopping-list-close-btn-2" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded transition-colors">Fechar</button>
+            </div>
+        </div>
+    </div>
+
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
@@ -129,6 +144,13 @@
             const stackModalTitle = document.getElementById('stack-modal-title');
             const stackModalGrid = document.getElementById('stack-modal-grid');
             const stackModalCloseBtn = document.getElementById('stack-modal-close-btn');
+            
+            // NOVO: Elementos do modal da lista de compras
+            const shoppingListModal = document.getElementById('shopping-list-modal');
+            const shoppingListCloseBtn = document.getElementById('shopping-list-close-btn');
+            const shoppingListCloseBtn2 = document.getElementById('shopping-list-close-btn-2');
+            const shoppingListCopyBtn = document.getElementById('shopping-list-copy-btn');
+            const shoppingListTextarea = document.getElementById('shopping-list-textarea');
 
             let publicData = [];
             const params = new URLSearchParams(window.location.search);
@@ -294,18 +316,29 @@
 
                             if (!collapsibleContent.classList.contains('hidden') && !hasLoadedMissing) {
                                 hasLoadedMissing = true;
-
-                                const missingHeader = document.createElement('h3');
-                                missingHeader.className = "text-lg font-bold mt-8 mb-3 text-center text-red-400";
-                                missingHeader.textContent = "Cartas Faltantes";
                                 
+                                // NOVO: Container para o título e o botão
+                                const missingHeaderContainer = document.createElement('div');
+                                missingHeaderContainer.className = "flex justify-center items-center gap-4 mt-8 mb-3";
+                                
+                                const missingHeader = document.createElement('h3');
+                                missingHeader.className = "text-lg font-bold text-center text-red-400";
+                                missingHeader.textContent = "Cartas Faltantes";
+
+                                const generateListBtn = document.createElement('button');
+                                generateListBtn.innerHTML = '📋 Gerar Lista';
+                                generateListBtn.className = 'bg-blue-600 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-xs transition-colors hidden';
+                                
+                                missingHeaderContainer.appendChild(missingHeader);
+                                missingHeaderContainer.appendChild(generateListBtn);
+
                                 const missingGrid = document.createElement('div');
                                 missingGrid.className = "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4";
                                 
                                 const missingLoader = document.createElement('div');
                                 missingLoader.className = 'loader mx-auto col-span-full';
                                 
-                                collapsibleContent.appendChild(missingHeader);
+                                collapsibleContent.appendChild(missingHeaderContainer);
                                 collapsibleContent.appendChild(missingGrid);
                                 missingGrid.appendChild(missingLoader);
                                 
@@ -326,6 +359,19 @@
                                     } else {
                                         missingCards.forEach(card => {
                                             missingGrid.appendChild(createMissingCardElement(card));
+                                        });
+
+                                        // NOVO: Mostrar o botão e adicionar o evento de clique
+                                        generateListBtn.classList.remove('hidden');
+                                        generateListBtn.addEventListener('click', (e) => {
+                                            e.stopPropagation(); // Impede que o clique feche o painel
+                                            let shoppingListString = `Lista de Compras - ${set.name}\n\n`;
+                                            missingCards.forEach(card => {
+                                                const cardNumber = card.number || 'N/A';
+                                                const setTotal = card.set.printedTotal || 'N/A';
+                                                shoppingListString += `${card.name} (${cardNumber}/${setTotal})\n`;
+                                            });
+                                            displayCopyableList(shoppingListString);
                                         });
                                     }
                                 } catch (error) {
@@ -369,6 +415,21 @@
                         collectionContainer.appendChild(representativeCard);
                     }
                 }
+            }
+            
+            // NOVO: Função para exibir o modal com a lista
+            function displayCopyableList(text) {
+                shoppingListTextarea.value = text;
+                shoppingListModal.style.display = 'flex';
+
+                shoppingListCopyBtn.onclick = () => {
+                    navigator.clipboard.writeText(text).then(() => {
+                        shoppingListCopyBtn.textContent = 'Copiado!';
+                        setTimeout(() => { shoppingListCopyBtn.textContent = 'Copiar Lista'; }, 2000);
+                    }, () => {
+                         shoppingListCopyBtn.textContent = 'Falha ao copiar';
+                    });
+                };
             }
 
             function createMissingCardElement(card) {
@@ -512,6 +573,11 @@
             
             groupBySelect.addEventListener('change', renderPublicCollection);
             stackModalCloseBtn.addEventListener('click', () => pokedexStackModal.style.display = 'none');
+            
+            // NOVO: Eventos para fechar o modal da lista de compras
+            shoppingListCloseBtn.addEventListener('click', () => shoppingListModal.style.display = 'none');
+            shoppingListCloseBtn2.addEventListener('click', () => shoppingListModal.style.display = 'none');
+
         });
     </script>
 </body>
