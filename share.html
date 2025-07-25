@@ -493,7 +493,6 @@
                 stackModalTitle.textContent = `Versões de ${pokemonName}`;
                 stackModalBody.innerHTML = ''; 
 
-                // Seção de Cartas Possuídas
                 const ownedHeader = document.createElement('h3');
                 ownedHeader.className = "text-lg font-bold mb-3 text-green-400";
                 ownedHeader.textContent = "Versões que você tem";
@@ -507,7 +506,6 @@
 
                 pokedexStackModal.style.display = 'flex';
 
-                // Seção de Cartas Faltantes
                 const missingHeaderContainer = document.createElement('div');
                 missingHeaderContainer.className = "flex justify-center items-center gap-4 mt-8 mb-3";
                 
@@ -533,10 +531,9 @@
                 
                 try {
                     const ownedCardIds = new Set(cardsInStack.map(card => card.id));
-                    const relevantSetIds = new Set(cardsInStack.map(card => card.set.id));
                     
-                    const setQueryPart = Array.from(relevantSetIds).map(id => `set.id:${id}`).join(' OR ');
-                    const apiQuery = `name:"${pokemonName}" (${setQueryPart})`;
+                    // **ALTERAÇÃO AQUI: A busca agora é por todas as versões do Pokémon**
+                    const apiQuery = `name:"${pokemonName}"`;
 
                     const response = await fetch(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(apiQuery)}&orderBy=set.releaseDate,number&select=id,name,number,images,set`);
                     if (!response.ok) throw new Error('API request failed for missing Pokémon cards.');
@@ -549,7 +546,7 @@
                     missingLoader.remove();
 
                     if (missingCards.length === 0) {
-                        missingHeader.textContent = `✨ Nenhuma outra versão de ${pokemonName} encontrada nos sets que você coleciona! ✨`;
+                        missingHeader.textContent = `✨ Você possui todas as versões de ${pokemonName}! ✨`;
                         missingHeader.className = "text-lg font-bold mt-8 mb-3 text-center text-green-400";
                     } else {
                         missingCards.forEach(card => missingGrid.appendChild(createMissingCardElement(card)));
