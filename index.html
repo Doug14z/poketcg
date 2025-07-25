@@ -454,7 +454,7 @@
                 showToast(`<strong>${cardData.name}</strong> adicionado à coleção!`);
             }
             
-            // *** FUNÇÃO ATUALIZADA COM MELHOR LOG DE ERRO ***
+            // *** FUNÇÃO ATUALIZADA COM TRATAMENTO DE ERRO ELEGANTE ***
             const openDetailsModal = async (docId) => {
                 const card = collectionData.get(docId);
                 if (!card) return;
@@ -482,7 +482,6 @@
                 try {
                     const tcgDexResponse = await fetch(apiUrl);
                     if (!tcgDexResponse.ok) {
-                        // Se a resposta não for OK (ex: 404 Not Found), lança um erro com o status
                         throw new Error(`Status da resposta: ${tcgDexResponse.status}`);
                     }
                     
@@ -538,7 +537,9 @@
                     // Log de erro aprimorado
                     console.error(`Falha ao buscar da TCGdex. URL tentada: ${apiUrl}`);
                     console.error("Detalhes do erro:", error);
-                    extraDetailsContainer.innerHTML = '<p class="text-xs text-center text-gray-500">Não foi possível carregar detalhes extras da carta.</p>';
+                    // *** MUDANÇA PRINCIPAL AQUI ***
+                    // Em vez de mostrar uma mensagem de erro, simplesmente limpamos o container.
+                    extraDetailsContainer.innerHTML = '';
                 }
             };
 
