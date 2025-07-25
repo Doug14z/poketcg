@@ -98,7 +98,7 @@
             </div>
         </div>
     </div>
-    
+
     <div id="shopping-list-modal" class="modal-overlay">
         <div class="modal-content" style="max-width: 500px;">
              <div class="flex justify-between items-center mb-4">
@@ -144,8 +144,7 @@
             const stackModalTitle = document.getElementById('stack-modal-title');
             const stackModalGrid = document.getElementById('stack-modal-grid');
             const stackModalCloseBtn = document.getElementById('stack-modal-close-btn');
-            
-            // NOVO: Elementos do modal da lista de compras
+
             const shoppingListModal = document.getElementById('shopping-list-modal');
             const shoppingListCloseBtn = document.getElementById('shopping-list-close-btn');
             const shoppingListCloseBtn2 = document.getElementById('shopping-list-close-btn-2');
@@ -155,7 +154,7 @@
             let publicData = [];
             const params = new URLSearchParams(window.location.search);
             const userId = params.get('user');
-            const listType = params.get('list'); // 'sale', 'wishlist', ou null
+            const listType = params.get('list'); 
 
             if (!userId) { showError("Nenhum utilizador especificado."); return; }
 
@@ -264,7 +263,7 @@
                     const sortedGroupKeys = Object.keys(grouped).sort((a, b) => new Date(grouped[b][0].set.releaseDate) - new Date(grouped[a][0].set.releaseDate));
 
                     for (const setId of sortedGroupKeys) {
-                         const cardsInGroup = grouped[setId];
+                        const cardsInGroup = grouped[setId];
                         const set = cardsInGroup[0].set;
                         const uniqueOwnedIds = new Set(cardsInGroup.map(c => c.id));
                         const percentage = set.printedTotal > 0 ? (uniqueOwnedIds.size / set.printedTotal) * 100 : 0;
@@ -317,7 +316,6 @@
                             if (!collapsibleContent.classList.contains('hidden') && !hasLoadedMissing) {
                                 hasLoadedMissing = true;
                                 
-                                // NOVO: Container para o título e o botão
                                 const missingHeaderContainer = document.createElement('div');
                                 missingHeaderContainer.className = "flex justify-center items-center gap-4 mt-8 mb-3";
                                 
@@ -361,15 +359,16 @@
                                             missingGrid.appendChild(createMissingCardElement(card));
                                         });
 
-                                        // NOVO: Mostrar o botão e adicionar o evento de clique
                                         generateListBtn.classList.remove('hidden');
                                         generateListBtn.addEventListener('click', (e) => {
-                                            e.stopPropagation(); // Impede que o clique feche o painel
+                                            e.stopPropagation(); 
                                             let shoppingListString = `Lista de Compras - ${set.name}\n\n`;
                                             missingCards.forEach(card => {
                                                 const cardNumber = card.number || 'N/A';
                                                 const setTotal = card.set.printedTotal || 'N/A';
-                                                shoppingListString += `${card.name} (${cardNumber}/${setTotal})\n`;
+                                                // **AQUI ESTÁ A CORREÇÃO**
+                                                const formattedCardNumber = String(cardNumber).padStart(3, '0');
+                                                shoppingListString += `${card.name} (${formattedCardNumber}/${setTotal})\n`;
                                             });
                                             displayCopyableList(shoppingListString);
                                         });
@@ -397,7 +396,7 @@
                         collectionContainer.appendChild(collapsibleContent);
                     }
 
-                } else { // Agrupar por Pokédex (Coleção ou Venda)
+                } else { 
                     collectionContainer.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4';
                     const pokedexGroup = {};
                     allCards.forEach(card => {
@@ -417,7 +416,6 @@
                 }
             }
             
-            // NOVO: Função para exibir o modal com a lista
             function displayCopyableList(text) {
                 shoppingListTextarea.value = text;
                 shoppingListModal.style.display = 'flex';
@@ -512,7 +510,6 @@
                 const cardElement = document.createElement('div');
                 cardElement.className = "bg-gray-800 p-3 rounded-lg flex flex-col items-center text-center collection-card";
                 
-                // Wishlist Card
                 if(listType === 'wishlist') {
                      cardElement.innerHTML = `
                         <img src="${card.image || card.images.small}" alt="${card.name}" class="rounded w-full mb-2 aspect-[5/7] object-cover">
@@ -525,7 +522,6 @@
                     return cardElement;
                 }
 
-                // Collection / Sale Card
                 const qualityClasses = { 'Nova': 'bg-green-600 text-white', 'Pouco Usada': 'bg-yellow-500 text-gray-900', 'Usada': 'bg-red-600 text-white' };
                 const qualityClass = qualityClasses[card.quality] || 'bg-gray-500';
                 
@@ -574,10 +570,8 @@
             groupBySelect.addEventListener('change', renderPublicCollection);
             stackModalCloseBtn.addEventListener('click', () => pokedexStackModal.style.display = 'none');
             
-            // NOVO: Eventos para fechar o modal da lista de compras
             shoppingListCloseBtn.addEventListener('click', () => shoppingListModal.style.display = 'none');
             shoppingListCloseBtn2.addEventListener('click', () => shoppingListModal.style.display = 'none');
-
         });
     </script>
 </body>
