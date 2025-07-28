@@ -86,15 +86,6 @@
         import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot, collection, deleteDoc, updateDoc, increment, getDoc } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
 
-        // *** FUNÇÃO DE DEBOUNCE ADICIONADA ***
-        function debounce(func, timeout = 400){
-            let timer;
-            return (...args) => {
-                clearTimeout(timer);
-                timer = setTimeout(() => { func.apply(this, args); }, timeout);
-            };
-        }
-
         document.addEventListener('DOMContentLoaded', async () => {
             // Elementos da UI
             const authModal = document.getElementById('auth-modal');
@@ -148,9 +139,7 @@
 
             // Variáveis de estado
             let currentUserId = null;
-            // *** CACHES OTIMIZADOS ***
-            let queryCache = new Map(); // Cache para os resultados das buscas (ex: 'name:pikachu' -> [lista de cards])
-            let currentDisplayCache = new Map(); // Cache para os detalhes dos cards atualmente na tela (ex: 'sv1-1' -> {dados do card})
+            let searchCache = new Map();
             let collectionData = new Map();
             let wishlistData = new Map();
             let collectionUnsubscribe = null;
@@ -276,57 +265,43 @@
             };
 
             searchTypeRadios.forEach(radio => radio.addEventListener('change', toggleSearchMode));
-            
-            // *** FUNÇÃO DE BUSCA TOTALMENTE OTIMIZADA ***
+
             const searchCards = async () => {
                 const searchType = document.querySelector('input[name="search-type"]:checked').value;
-                const searchTerm = (searchType === 'set') ? setSelect.value : searchInput.value.trim();
-
-                if (!searchTerm) {
-                    searchResultsContainer.innerHTML = '';
-                    return;
-                }
-                
-                const cacheKey = `${searchType}:${searchTerm}`;
-
-                // 1. VERIFICAR O CACHE DE BUSCAS PRIMEIRO!
-                if (queryCache.has(cacheKey)) {
-                    displaySearchResults(queryCache.get(cacheKey));
-                    return; // FIM! Busca instantânea.
-                }
-
-                // 2. SE NÃO ESTIVER NO CACHE, FAZER A BUSCA REAL
-                loader.classList.remove('hidden');
-                searchResultsContainer.innerHTML = '';
-
+                let searchTerm = '';
                 let query = '';
+                let postFilter = null;
                 if (searchType === 'set') {
+                    searchTerm = setSelect.value;
+                    if (!searchTerm) { alert('Por favor, selecione uma edição.'); return; }
                     query = `set.id:"${searchTerm}"`;
                 } else {
+                    searchTerm = searchInput.value.trim();
+                    if (!searchTerm) return;
                     const numberSearchRegex = /^(\d+)\/(\d+)$/;
                     const numberMatch = searchTerm.match(numberSearchRegex);
 
                     if (numberMatch) {
-                        const cardNumber = numberMatch[1];
-                        const setTotal = numberMatch[2];
-                        // Query otimizada para a própria API filtrar
-                        query = `number:"${cardNumber}" set.printedTotal:${setTotal}`;
+                        const cardNumber = parseInt(numberMatch[1], 10);
+                        query = `number:"${cardNumber}"`;
+                        postFilter = (cards) => {
+                            const setTotal = parseInt(numberMatch[2], 10);
+                            return cards.filter(card => card.set.printedTotal === setTotal);
+                        };
                     } else {
                         query = `name:"${searchTerm}*"`;
                     }
                 }
-
+                loader.classList.remove('hidden');
+                searchResultsContainer.innerHTML = '';
+                searchCache.clear();
                 try {
                     const response = await fetch(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(query)}`);
                     if (!response.ok) throw new Error('A resposta da rede não foi "ok".');
                     const data = await response.json();
-                    const cardsToShow = data.data || [];
-                    
-                    // 3. SALVAR NO CACHE ANTES DE EXIBIR
-                    queryCache.set(cacheKey, cardsToShow);
-                    
+                    let cardsToShow = data.data || [];
+                    if (postFilter) cardsToShow = postFilter(cardsToShow);
                     displaySearchResults(cardsToShow);
-
                 } catch (error) {
                     console.error("Falha ao buscar cartas:", error);
                     searchResultsContainer.innerHTML = `<p class="text-red-400 text-center">Erro ao buscar cartas. Tente novamente.</p>`;
@@ -335,20 +310,14 @@
                 }
             };
 
-            // *** FUNÇÃO DE EXIBIÇÃO AJUSTADA PARA USAR O CACHE CORRETO ***
             const displaySearchResults = (cards) => {
                 searchResultsContainer.innerHTML = '';
-                currentDisplayCache.clear(); // Limpa o cache de cards visíveis
-
                 if (!cards || cards.length === 0) {
                     searchResultsContainer.innerHTML = `<p class="text-center text-gray-400">Nenhuma carta encontrada.</p>`;
                     return;
                 }
-
                 cards.forEach(card => {
-                    // Popula o cache com os detalhes dos cards que serão exibidos
-                    currentDisplayCache.set(card.id, card);
-
+                    searchCache.set(card.id, card);
                     const cardElement = document.createElement('div');
                     cardElement.className = 'card-item relative transition-transform duration-200';
                     cardElement.innerHTML = `
@@ -360,7 +329,6 @@
                     `;
                     searchResultsContainer.appendChild(cardElement);
                 });
-
                 document.querySelectorAll('.open-add-modal-btn').forEach(button => button.addEventListener('click', (e) => openAddCardModal(e.currentTarget.dataset.cardId)));
                 document.querySelectorAll('.add-to-wishlist-btn').forEach(button => button.addEventListener('click', (e) => handleAddToWishlist(e.currentTarget.dataset.cardId)));
             };
@@ -371,7 +339,7 @@
                     authModal.style.display = 'flex';
                     return;
                 }
-                const card = currentDisplayCache.get(cardId); // Pega do cache correto
+                const card = searchCache.get(cardId);
                 if (!card) return;
 
                 const wishlistCardData = {
@@ -394,16 +362,15 @@
                 }
             };
 
-            // *** FUNÇÃO AJUSTADA PARA USAR O CACHE CORRETO ***
+
             const openAddCardModal = (cardId) => {
                 if (!currentUserId) {
                     alert("Por favor, faça login ou crie uma conta para adicionar cartas à sua coleção.");
                     authModal.style.display = 'flex';
                     return;
                 }
-                const card = currentDisplayCache.get(cardId); // Pega do cache correto
+                const card = searchCache.get(cardId);
                 if (!card) return;
-                
                 const modalCardImage = document.getElementById('modal-card-image');
                 const modalCardName = document.getElementById('modal-card-name');
                 const modalCardSetInfo = document.getElementById('modal-card-set-info');
@@ -438,16 +405,10 @@
                 addCardModal.style.display = 'flex';
             };
 
-            // *** FUNÇÃO AJUSTADA PARA USAR O CACHE CORRETO ***
             async function handleAddFormSubmit(e) {
                 e.preventDefault();
                 const cardId = addCardForm.dataset.cardId;
-                const card = currentDisplayCache.get(cardId); // Pega do cache correto
-                if (!card) {
-                    alert("Erro: não foi possível encontrar os dados da carta. Tente novamente.");
-                    return;
-                }
-
+                const card = searchCache.get(cardId);
                 const quality = addCardForm.quality.value;
                 const finishKey = addCardForm.finish.value;
                 const finishText = getFinishDisplayName(finishKey);
@@ -493,6 +454,7 @@
                 showToast(`<strong>${cardData.name}</strong> adicionado à coleção!`);
             }
             
+            // *** FUNÇÃO ATUALIZADA COM TRATAMENTO DE ERRO ELEGANTE ***
             const openDetailsModal = async (docId) => {
                 const card = collectionData.get(docId);
                 if (!card) return;
@@ -572,8 +534,11 @@
                     extraDetailsContainer.innerHTML = extraDetailsHTML;
 
                 } catch (error) {
+                    // Log de erro aprimorado
                     console.error(`Falha ao buscar da TCGdex. URL tentada: ${apiUrl}`);
                     console.error("Detalhes do erro:", error);
+                    // *** MUDANÇA PRINCIPAL AQUI ***
+                    // Em vez de mostrar uma mensagem de erro, simplesmente limpamos o container.
                     extraDetailsContainer.innerHTML = '';
                 }
             };
@@ -892,7 +857,7 @@
                     shareLinkWishlistInput.classList.add('text-gray-400');
                 }
             };
-            
+
             // --- INÍCIO DAS CHAMADAS PRINCIPAIS ---
             try {
                 await populateSetDropdown();
@@ -901,21 +866,8 @@
             }
 
             toggleSearchMode();
-
-            // *** NOVOS EVENT LISTENERS OTIMIZADOS ***
-            const debouncedCardSearch = debounce(searchCards);
-            
-            searchInput.addEventListener('input', () => {
-                // Ativa a busca automática (debounced) apenas para busca por nome/carta
-                if(document.querySelector('input[name="search-type"]:checked').value === 'card'){
-                    debouncedCardSearch();
-                }
-            });
-            // O botão continua funcionando para buscas por edição ou para quem prefere clicar
             searchButton.addEventListener('click', searchCards);
-            setSelect.addEventListener('change', searchCards); // Busca ao selecionar uma edição
-
-
+            searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') searchCards(); });
             addCardForm.addEventListener('submit', handleAddFormSubmit);
             addCardModalCloseBtn.addEventListener('click', () => addCardModal.style.display = 'none');
             detailsModalCloseBtn.addEventListener('click', () => detailsModal.style.display = 'none');
