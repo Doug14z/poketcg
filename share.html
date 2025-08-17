@@ -16,32 +16,89 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Poppins', sans-serif; background-color: #111827; color: #f3f4f6; }
-        h1, h2, .group-header-name { font-family: 'Press Start 2P', cursive; }
+        h1, h2, .group-header-name, .group-header { font-family: 'Press Start 2P', cursive; }
         .loader { border: 4px solid #4b5563; border-top: 4px solid #f59e0b; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
+        
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.85); display: none; align-items: center; justify-content: center; z-index: 100; backdrop-filter: blur(4px); }
         .modal-content { background-color: #1f2937; padding: 1.5rem; border-radius: 16px; width: 90%; max-width: 1200px; max-height: 90vh; box-shadow: 0 10px 25px rgba(0,0,0,0.2); border: 1px solid #374151; display: flex; flex-direction: column; }
-        .modal-body-scrollable { overflow-y: auto; padding-right: 0.5rem; }
-        
+
         .collection-card { position: relative; }
+        .card-image-zoom { transition: transform 0.2s ease-in-out; }
+        .collection-card:hover .card-image-zoom { transform: scale(1.1); z-index: 50; }
+        
+        .group-header-wrapper {
+            background-color: #374151;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .group-header-wrapper:hover {
+            background-color: #4b5563;
+        }
 
-        .group-header-wrapper { background-color: #374151; padding: 0.75rem 1rem; border-radius: 8px; margin-top: 1rem; cursor: pointer; transition: background-color 0.2s; }
-        .group-header-wrapper:hover { background-color: #4b5563; }
-
+        .group-header {
+            grid-column: 1 / -1;
+            background-color: #374151;
+            color: #d1d5db;
+            padding: 0.5rem 1rem;
+            font-size: 0.8rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+        }
+        
         .set-logo {
-            height: 196px;
-            width: auto;
-            max-width: 350px;
+            height: 296px; 
+            width: 296px;
             object-fit: contain;
             flex-shrink: 0;
         }
 
-        .stack-badge { position: absolute; top: 8px; right: 8px; background-color: rgba(245, 158, 11, 0.95); color: white; padding: 2px 8px; border-radius: 9999px; font-size: 0.75rem; font-weight: bold; border: 1px solid white; z-index: 10; }
+        .stack-badge {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background-color: rgba(245, 158, 11, 0.95);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            border: 1px solid white;
+            z-index: 10;
+        }
 
-        .progress-bar-container { position: relative; height: 22px; background-color: #111827; border-radius: 8px; border: 2px solid #4b5563; margin-top: 0.5rem; overflow: hidden; }
-        .progress-bar-fill { height: 100%; border-radius: 6px; transition: width 0.5s ease-in-out, background 0.5s ease-in-out; }
-        .progress-bar-text { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; color: #ffffff; text-shadow: 1px 1px 2px rgba(0,0,0,0.7); }
+        .progress-bar-container {
+            position: relative;
+            height: 22px;
+            background-color: #111827;
+            border-radius: 8px;
+            border: 2px solid #4b5563;
+            margin-top: 0.5rem;
+            overflow: hidden;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            border-radius: 6px;
+            transition: width 0.5s ease-in-out, background 0.5s ease-in-out;
+        }
+        .progress-bar-text {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #ffffff;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+        }
 
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #2d3748; }
@@ -53,13 +110,14 @@
 
     <div class="container mx-auto p-4 md:p-8">
         <header class="text-center mb-8">
-            <h1 id="collection-title" class="text-2xl md:text-3xl font-bold text-white">Carregando...</h1>
-            <p id="collection-subtitle" class="text-lg text-yellow-400 mt-2" style="font-family: 'Poppins', sans-serif;"></p>
-            <div id="contact-container" class="mt-4"></div>
+            <h1 id="collection-title" class="text-2xl md:text-3xl font-bold text-white">Carregando coleção...</h1>
         </header>
 
         <main>
              <div id="stats-container" class="my-4 text-center hidden" style="font-family: 'Poppins', sans-serif;">
+                <p class="font-semibold text-lg">Valor Estimado da Coleção: <span id="total-value" class="text-yellow-400">R$ 0,00</span></p>
+                <p class="text-xs text-gray-500 mt-1">*Valor estimado em Reais (R$) baseado nos preços de mercado em Dólar (USD) do TCGplayer no momento da adição.</p>
+                
                 <div id="overall-progress-section" class="mt-6 max-w-lg mx-auto">
                     <h2 class="text-lg font-bold mb-2 text-center" style="font-family: 'Poppins',sans-serif;">Progresso da Pokédex Nacional</h2>
                     <div class="progress-bar-container">
@@ -68,22 +126,24 @@
                     </div>
                 </div>
             </div>
-
+            
             <div id="controls-container" class="hidden flex justify-end items-center mb-4" style="font-family: 'Poppins', sans-serif;">
                 <div>
                     <label for="group-by-select" class="text-sm font-semibold mr-2">Organizar por:</label>
                     <select id="group-by-select" class="bg-gray-700 border border-gray-600 rounded-lg px-3 py-1 text-sm">
                         <option value="pokedex">Pokédex</option>
                         <option value="edition">Edição</option>
+                        <option value="generation">Geração</option>
+                        <option value="value">Valor</option>
                     </select>
                 </div>
             </div>
 
             <div id="loader" class="loader mx-auto"></div>
             <div id="error-message" class="hidden text-center text-red-400"></div>
-            <div id="public-collection"></div>
+            <div id="public-collection" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4"></div>
         </main>
-
+        
         <footer class="text-center p-6 mt-8 border-t border-gray-700 text-xs" style="font-family: 'Poppins', sans-serif;">
             <p class="text-sm text-gray-300">Coleção visualizada através do Gerenciador TCG.</p>
         </footer>
@@ -95,21 +155,7 @@
                 <h2 id="stack-modal-title" class="text-xl md:text-2xl">Versões</h2>
                 <button id="stack-modal-close-btn" class="text-4xl font-bold text-gray-400 hover:text-white transition-colors">&times;</button>
             </div>
-            <div id="stack-modal-body" class="modal-body-scrollable" style="max-height: 70vh;">
-            </div>
-        </div>
-    </div>
-
-    <div id="shopping-list-modal" class="modal-overlay">
-        <div class="modal-content" style="max-width: 500px;">
-             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl">Lista de Compras</h2>
-                <button id="shopping-list-close-btn" class="text-4xl font-bold text-gray-400 hover:text-white transition-colors">&times;</button>
-            </div>
-            <textarea id="shopping-list-textarea" readonly class="w-full h-64 bg-gray-800 border border-gray-600 rounded-lg p-3 text-gray-200 text-sm whitespace-pre-wrap"></textarea>
-            <div class="mt-4 flex gap-4">
-                <button id="shopping-list-copy-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition-colors">Copiar Lista</button>
-                <button id="shopping-list-close-btn-2" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded transition-colors">Fechar</button>
+            <div id="stack-modal-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 overflow-y-auto p-1" style="max-height: 70vh;">
             </div>
         </div>
     </div>
@@ -117,7 +163,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
-        import { getFirestore, doc, getDoc, collection, getDocs, query, where, orderBy } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
 
         document.addEventListener('DOMContentLoaded', async () => {
             const firebaseConfig = {
@@ -136,28 +182,39 @@
             const loader = document.getElementById('loader');
             const collectionContainer = document.getElementById('public-collection');
             const title = document.getElementById('collection-title');
-            const subtitle = document.getElementById('collection-subtitle');
             const errorMessage = document.getElementById('error-message');
             const controlsContainer = document.getElementById('controls-container');
             const groupBySelect = document.getElementById('group-by-select');
             const statsContainer = document.getElementById('stats-container');
+            const totalValueEl = document.getElementById('total-value');
+            
             const pokedexStackModal = document.getElementById('pokedex-stack-modal');
             const stackModalTitle = document.getElementById('stack-modal-title');
-            const stackModalBody = document.getElementById('stack-modal-body');
+            const stackModalGrid = document.getElementById('stack-modal-grid');
             const stackModalCloseBtn = document.getElementById('stack-modal-close-btn');
+            
+            let publicCollectionData = [];
 
-            const shoppingListModal = document.getElementById('shopping-list-modal');
-            const shoppingListCloseBtn = document.getElementById('shopping-list-close-btn');
-            const shoppingListCloseBtn2 = document.getElementById('shopping-list-close-btn-2');
-            const shoppingListCopyBtn = document.getElementById('shopping-list-copy-btn');
-            const shoppingListTextarea = document.getElementById('shopping-list-textarea');
-
-            let publicData = [];
             const params = new URLSearchParams(window.location.search);
             const userId = params.get('user');
-            const listType = params.get('list'); 
 
             if (!userId) { showError("Nenhum utilizador especificado."); return; }
+            
+            // --- MAPEAMENTO DE GERAÇÕES ---
+            const generationMap = {
+                'base1': 1, 'jungle': 1, 'fossil': 1, 'base2': 1, 'basep': 1, 'teamrocket': 1, 'gym1': 1, 'gym2': 1,
+                'neo1': 2, 'neo2': 2, 'neo3': 2, 'neo4': 2, 'ecard1': 2, 'ecard2': 2, 'ecard3': 2,
+                'ex1': 3, 'ex2': 3, 'ex3': 3, 'ex4': 3, 'ex5': 3, 'ex6': 3, 'ex7': 3, 'ex8': 3, 'ex9': 3, 'ex10': 3, 'ex11': 3, 'ex12': 3, 'ex13': 3, 'ex14': 3, 'ex15': 3, 'ex16': 3, 'pop5': 3,
+                'dp1': 4, 'dp2': 4, 'dp3': 4, 'dp4': 4, 'dp5': 4, 'dp6': 4, 'dp7': 4, 'pl1': 4, 'pl2': 4, 'pl3': 4, 'pl4': 4, 'pop9': 4,
+                'hgss1': 4, 'hgss2': 4, 'hgss3': 4, 'hgss4': 4, 'col1': 4,
+                'bw1': 5, 'bw2': 5, 'bw3': 5, 'bw4': 5, 'bw5': 5, 'bw6': 5, 'bw7': 5, 'bw8': 5, 'bw9': 5, 'bw10': 5, 'bw11': 5, 'dv1': 5,
+                'xy0': 6, 'xy1': 6, 'xy2': 6, 'xy3': 6, 'xy4': 6, 'xy5': 6, 'xy6': 6, 'xy7': 6, 'xy8': 6, 'xy9': 6, 'xy10': 6, 'xy11': 6, 'xy12': 6, 'g1': 6, 'dc1': 6,
+                'sm1': 7, 'sm2': 7, 'sm3': 7, 'sm4': 7, 'sm5': 7, 'sm6': 7, 'sm7': 7, 'sm7.5': 7, 'sm8': 7, 'sm9': 7, 'sm10': 7, 'sm11': 7, 'sm11.5': 7, 'sm12': 7, 'det1': 7,
+                'swsh1': 8, 'swsh2': 8, 'swsh3': 8, 'swsh4': 8, 'swsh4.5': 8, 'swsh5': 8, 'swsh6': 8, 'swsh7': 8, 'swsh8': 8, 'swsh9': 8, 'swsh9.5': 8, 'swsh10': 8, 'swsh10.5': 8, 'swsh11': 8, 'swsh12': 8, 'swsh12.5': 8, 'cel25': 8, 'pgo': 8,
+                'sv1': 9, 'sv2': 9, 'sv3': 9, 'sv3.5': 9, 'sv4': 9, 'sv4.5': 9, 'sv5': 9, 'sv6': 9, 'sv7': 9,
+            };
+            const getGeneration = (card) => generationMap[card.set.id] || 'Outra';
+
 
             try {
                 const profileRef = doc(db, 'public_profiles', userId);
@@ -170,90 +227,88 @@
 
                 const ownerName = profileSnap.data().ownerName || 'um Treinador';
                 title.textContent = `Coleção de ${ownerName}`;
-                
-                let finalQuery;
-                
-                if (listType === 'sale') {
-                    subtitle.textContent = "Itens para Venda";
-                    finalQuery = query(collection(db, `users/${userId}/tcg-collection`), where("quantityForSale", ">", 0));
-                } else if (listType === 'wishlist') {
-                    subtitle.textContent = "Lista de Desejos";
-                    finalQuery = query(collection(db, `users/${userId}/tcg-wishlist`), orderBy("addedAt", "desc"));
-                } else {
-                    subtitle.textContent = "Coleção Completa";
-                    finalQuery = query(collection(db, `users/${userId}/tcg-collection`));
-                }
 
-                const socialLink = profileSnap.data().socialLink;
-                if (socialLink) {
-                    const contactContainer = document.getElementById('contact-container');
-                    const contactButton = document.createElement('a');
-                    contactButton.href = socialLink;
-                    contactButton.target = '_blank';
-                    contactButton.rel = 'noopener noreferrer';
-                    contactButton.className = 'inline-block bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-full transition-colors text-sm';
-                    contactButton.innerHTML = `<span class="flex items-center gap-2">Contatar Colecionador <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z" /><path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z" /></svg></span>`;
-                    contactContainer.appendChild(contactButton);
-                }
-                
-                const dataSnapshot = await getDocs(finalQuery);
+                const collectionRef = collection(db, `users/${userId}/tcg-collection`);
+                const collectionSnapshot = await getDocs(collectionRef);
 
-                if (dataSnapshot.empty) {
+                if (collectionSnapshot.empty) {
                     loader.classList.add('hidden');
-                    let emptyMessage = 'Esta coleção está vazia.';
-                    if (listType === 'sale') emptyMessage = 'Nenhuma carta disponível para venda no momento.';
-                    if (listType === 'wishlist') emptyMessage = 'A lista de desejos está vazia.';
-                    collectionContainer.innerHTML = `<p class="col-span-full text-center text-gray-400">${emptyMessage}</p>`;
+                    collectionContainer.innerHTML = '<p class="col-span-full text-center text-gray-400">Esta coleção está vazia.</p>';
                     return;
                 }
                 
-                publicData = dataSnapshot.docs.map(doc => ({ ...doc.data(), docId: doc.id }));
+                publicCollectionData = collectionSnapshot.docs.map(doc => ({ ...doc.data(), docId: doc.id }));
                 
-                if (listType !== 'wishlist') {
-                    calculateAndDisplayStats();
-                    controlsContainer.classList.remove('hidden');
-                    controlsContainer.classList.add('flex');
-                } else {
-                     collectionContainer.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4';
-                }
-
+                calculateAndDisplayStats();
                 renderPublicCollection();
+                controlsContainer.classList.remove('hidden');
+                controlsContainer.classList.add('flex');
                 loader.classList.add('hidden');
 
             } catch (error) {
-                console.error("Erro ao buscar dados públicos:", error);
-                showError("Não foi possível carregar os dados. Verifique o link ou tente mais tarde.");
+                console.error("Erro ao buscar coleção pública:", error);
+                showError("Não foi possível carregar a coleção. Verifique o link ou tente mais tarde.");
             }
             
             function calculateAndDisplayStats() {
                 const TOTAL_POKEMON = 1025;
-                const collectionCards = publicData.filter(c => c.pokedexNumber);
-                const ownedPokedexNumbers = new Set(collectionCards.map(c => c.pokedexNumber));
+                const totalValue = publicCollectionData.reduce((sum, card) => sum + (card.acquiredPrice || 0) * card.quantity, 0);
+                totalValueEl.textContent = `R$ ${totalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                
+                const ownedPokedexNumbers = new Set(publicCollectionData.filter(c => c.pokedexNumber).map(c => c.pokedexNumber));
                 const uniquePokemonOwned = ownedPokedexNumbers.size;
                 const pokedexPercentage = TOTAL_POKEMON > 0 ? (uniquePokemonOwned / TOTAL_POKEMON) * 100 : 0;
                 
                 const pokedexProgressFill = document.getElementById('pokedex-progress-fill');
                 const pokedexProgressText = document.getElementById('pokedex-progress-text');
+                
                 pokedexProgressFill.style.width = `${pokedexPercentage}%`;
                 if (pokedexPercentage < 30) { pokedexProgressFill.style.background = 'linear-gradient(to right, #ef4444, #f87171)'; } 
                 else if (pokedexPercentage < 60) { pokedexProgressFill.style.background = 'linear-gradient(to right, #f59e0b, #facc15)'; } 
                 else { pokedexProgressFill.style.background = 'linear-gradient(to right, #22c55e, #4ade80)'; }
                 pokedexProgressText.textContent = `${uniquePokemonOwned} / ${TOTAL_POKEMON}`;
+
                 statsContainer.classList.remove('hidden');
             }
-            
+
             function renderPublicCollection() {
                 collectionContainer.innerHTML = '';
-                if (listType === 'wishlist') {
-                    const sortedWishlist = publicData.sort((a,b) => (a.pokedexNumber || 9999) - (b.pokedexNumber || 9999));
-                    sortedWishlist.forEach(card => collectionContainer.appendChild(createCardElement(card)));
-                    return;
-                }
-
                 const groupBy = groupBySelect.value;
-                const allCards = [...publicData].filter(c => c && c.set && c.set.id);
+                const allCards = [...publicCollectionData].filter(c => c && c.set && c.set.id);
+                
+                if (groupBy === 'generation') {
+                    collectionContainer.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4';
+                    const grouped = {};
+                    allCards.forEach(card => {
+                        const generation = getGeneration(card);
+                        const key = `Geração ${generation}`;
+                        if (!grouped[key]) grouped[key] = [];
+                        grouped[key].push(card);
+                    });
+                    
+                    const sortedGroupKeys = Object.keys(grouped).sort((a, b) => {
+                        const numA = parseInt(a.replace(/[^0-9]/g, ''));
+                        const numB = parseInt(b.replace(/[^0-9]/g, ''));
+                        return numA - numB;
+                    });
 
-                if (groupBy === 'edition') {
+                    for (const groupName of sortedGroupKeys) {
+                        const groupHeader = document.createElement('div');
+                        groupHeader.className = 'group-header';
+                        groupHeader.textContent = groupName;
+                        collectionContainer.appendChild(groupHeader);
+                        
+                        const cardsInGroup = grouped[groupName];
+                        cardsInGroup.sort((a,b) => (a.pokedexNumber || 9999) - (b.pokedexNumber || 9999))
+                            .forEach(card => collectionContainer.appendChild(createCardElement(card, groupBy)));
+                    }
+
+                } else if (groupBy === 'value') {
+                    collectionContainer.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4';
+                    allCards.sort((a, b) => (b.acquiredPrice || 0) - (a.acquiredPrice || 0));
+                    allCards.forEach(card => collectionContainer.appendChild(createCardElement(card, groupBy)));
+
+                } else if (groupBy === 'edition') {
                     collectionContainer.className = 'flex flex-col gap-2';
                     const grouped = {};
                     allCards.forEach(card => {
@@ -273,7 +328,7 @@
                         headerWrapper.className = 'group-header-wrapper';
                         
                         const headerContent = document.createElement('div');
-                        headerContent.className = 'flex items-center gap-4';
+                        headerContent.className = 'flex items-center gap-4 cursor-pointer';
                         
                         const logoImg = document.createElement('img');
                         logoImg.src = set.images.logo || set.images.symbol;
@@ -300,88 +355,14 @@
                         progressBarText.className = 'progress-bar-text';
                         progressBarText.textContent = `${Math.round(percentage)}%`;
 
-                        const collapsibleContent = document.createElement('div');
-                        collapsibleContent.className = "mt-4 hidden";
+                        const cardGrid = document.createElement('div');
+                        cardGrid.className = "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mt-2 hidden";
                         
-                        const ownedGrid = document.createElement('div');
-                        ownedGrid.className = "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4";
                         cardsInGroup.sort((a,b) => (parseInt(String(a.number).replace(/[^0-9]/g, '')) || 0) - (parseInt(String(b.number).replace(/[^0-9]/g, '')) || 0))
-                            .forEach(card => ownedGrid.appendChild(createCardElement(card)));
-                        
-                        collapsibleContent.appendChild(ownedGrid);
-                        
-                        let hasLoadedMissing = false;
-                        headerWrapper.addEventListener('click', async () => {
-                            collapsibleContent.classList.toggle('hidden');
+                            .forEach(card => cardGrid.appendChild(createCardElement(card, 'edition')));
 
-                            if (!collapsibleContent.classList.contains('hidden') && !hasLoadedMissing) {
-                                hasLoadedMissing = true;
-                                
-                                const missingHeaderContainer = document.createElement('div');
-                                missingHeaderContainer.className = "flex justify-center items-center gap-4 mt-8 mb-3";
-                                
-                                const missingHeader = document.createElement('h3');
-                                missingHeader.className = "text-lg font-bold text-center text-red-400";
-                                missingHeader.textContent = "Cartas Faltantes";
-
-                                const generateListBtn = document.createElement('button');
-                                generateListBtn.innerHTML = '📋 Gerar Lista';
-                                generateListBtn.className = 'bg-blue-600 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-xs transition-colors hidden';
-                                
-                                missingHeaderContainer.appendChild(missingHeader);
-                                missingHeaderContainer.appendChild(generateListBtn);
-
-                                const missingGrid = document.createElement('div');
-                                missingGrid.className = "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4";
-                                
-                                const missingLoader = document.createElement('div');
-                                missingLoader.className = 'loader mx-auto col-span-full';
-                                
-                                collapsibleContent.appendChild(missingHeaderContainer);
-                                collapsibleContent.appendChild(missingGrid);
-                                missingGrid.appendChild(missingLoader);
-                                
-                                try {
-                                    const response = await fetch(`https://api.pokemontcg.io/v2/cards?q=set.id:${setId}&orderBy=number&select=id,name,number,images,set`);
-                                    if (!response.ok) throw new Error('API request failed');
-                                    
-                                    const setData = await response.json();
-                                    const allCardsInSet = setData.data;
-                                    const ownedIdsSet = new Set(cardsInGroup.map(c => c.id));
-                                    const missingCards = allCardsInSet.filter(card => !ownedIdsSet.has(card.id));
-                                    
-                                    missingLoader.remove();
-                                    
-                                    if (missingCards.length === 0) {
-                                        missingHeader.textContent = "✨ Você completou esta edição! ✨";
-                                        missingHeader.className = "text-lg font-bold mt-8 mb-3 text-center text-green-400";
-                                    } else {
-                                        missingCards.forEach(card => {
-                                            missingGrid.appendChild(createMissingCardElement(card));
-                                        });
-
-                                        generateListBtn.classList.remove('hidden');
-                                        generateListBtn.addEventListener('click', (e) => {
-                                            e.stopPropagation(); 
-                                            let shoppingListString = `Lista de Compras - ${set.name}\n\n`;
-                                            missingCards.forEach(card => {
-                                                const cardNumber = card.number || 'N/A';
-                                                const setTotal = card.set.printedTotal || 'N/A';
-                                                const formattedCardNumber = String(cardNumber).padStart(3, '0');
-                                                shoppingListString += `${card.name} (${formattedCardNumber}/${setTotal})\n`;
-                                            });
-                                            displayCopyableList(shoppingListString);
-                                        });
-                                    }
-                                } catch (error) {
-                                    console.error(`Erro ao buscar cartas faltantes para a edição ${setId}:`, error);
-                                    missingLoader.remove();
-                                    const errorMsg = document.createElement('p');
-                                    errorMsg.className = "col-span-full text-center text-yellow-500";
-                                    errorMsg.textContent = "Não foi possível carregar as cartas faltantes.";
-                                    missingGrid.appendChild(errorMsg);
-                                }
-                            }
+                        headerWrapper.addEventListener('click', () => {
+                            cardGrid.classList.toggle('hidden');
                         });
                         
                         progressBarContainer.appendChild(progressBarFill);
@@ -393,10 +374,9 @@
                         headerWrapper.appendChild(headerContent);
                         
                         collectionContainer.appendChild(headerWrapper);
-                        collectionContainer.appendChild(collapsibleContent);
+                        collectionContainer.appendChild(cardGrid);
                     }
-
-                } else { // Agrupar por Pokédex 
+                } else { // pokedex
                     collectionContainer.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4';
                     const pokedexGroup = {};
                     allCards.forEach(card => {
@@ -416,162 +396,33 @@
                 }
             }
             
-            function displayCopyableList(text) {
-                shoppingListTextarea.value = text;
-                shoppingListModal.style.display = 'flex';
-
-                shoppingListCopyBtn.onclick = () => {
-                    navigator.clipboard.writeText(text).then(() => {
-                        shoppingListCopyBtn.textContent = 'Copiado!';
-                        setTimeout(() => { shoppingListCopyBtn.textContent = 'Copiar Lista'; }, 2000);
-                    }, () => {
-                         shoppingListCopyBtn.textContent = 'Falha ao copiar';
-                    });
-                };
-            }
-
-            function createMissingCardElement(card) {
-                const affiliateConfig = {
-                    mercadolivre: {
-                        staticLink: 'https://www.mercadolivre.com.br/social/doug14z?matt_word=doug14z&matt_tool=78732339&forceInApp=true&ref=BFyEx4ciPSpWXd94EmSqtJAeDYPSIGau87en%2B10HvqvjXtvmX6FL7%2BqgggdctPEYLn54kiXcIrKXTWKZnjriMI1MA9hBCyx9FD5WJ%2BnmkH29OMe5c%2BO0HWeqhuXTNS5c%2BrATm3r27irjC1U5plPaESvqr0jfS1%2BYn65EsCscziIeHVOy7fNZYKcD411wxH%2FC5XiDsF69dRwE1do0wqx02%2BXjy0Q2hXOKHoDO9zRHrpykCqEC0GgsGQE6vrxrgSxL%2B8JWY7XXn1kgPT%2FFStDz%2FU%2BpW8G%2FX5eLFFb2D6Cw9DscefMYPC14GkIAOKqJ86JkLAqh%2BO7dfGbvRRyuchkp1SPIBE6LWShiqdHjuV7sy1b8fiJg6e1%2BckjqQQsFqXGrsGSygfGunBlP4kjUtEBGUaDMiM%2FTJ2tSYlH6eiVg0ET7xG08nyXpovTuvmxQEJMFPSv%2FLAQVid4vpiqvJT6cyC3wU4XNvVqrFy2Tr%2BkSsqStdRPudPeU8ekBpNotD6%2By%2Fsen1GiyifxJ%2B6zZKfpi3mhyUq%2F%2FrEGpiZ%2FvvYE%3D'
-                    },
-                    amazon: {
-                        tag: 'tcgpokemon0b-20'
-                    }
-                };
-                let searchString = card.name;
-                if (card.number && card.set && card.set.printedTotal) {
-                    const paddedNumber = String(card.number).padStart(3, '0');
-                    searchString += ` (${paddedNumber}/${card.set.printedTotal})`;
-                }
-                const amazonSearch = encodeURIComponent(`${searchString} Pokémon TCG`);
-                const amazonLink = `https://www.amazon.com.br/s?k=${amazonSearch}&tag=${affiliateConfig.amazon.tag}`;
-                const mercadoLivreLink = affiliateConfig.mercadolivre.staticLink;
-                const cardElement = document.createElement('div');
-                cardElement.className = "bg-gray-800 p-3 rounded-lg flex flex-col items-center text-center";
-                let setInfoHTML = '';
-                if(card.set && card.set.name && card.number) {
-                    const symbolUrl = (card.set.images && card.set.images.symbol) ? card.set.images.symbol : '';
-                    const symbolImg = symbolUrl ? `<img src="${symbolUrl}" class="h-4" alt="Set Symbol">` : '';
-                    setInfoHTML = `<div class="text-xs text-gray-400 flex items-center justify-center gap-1.5 mt-1"><span>${card.set.name}</span> ${symbolImg} <span>#${String(card.number).padStart(3, '0')}</span></div>`;
-                }
-                cardElement.innerHTML = `
-                    <img src="${card.images.large || card.images.small}" alt="${card.name}" class="rounded w-full mb-2 aspect-[5/7] object-cover">
-                    <p class="font-bold text-sm text-white">${card.name}</p>
-                    ${setInfoHTML}
-                    <div class="mt-auto pt-3 text-center w-full">
-                        <p class="text-xs font-bold text-gray-300 mb-2">VER PREÇOS EM:</p>
-                        <div class="flex flex-col sm:flex-row justify-center gap-2">
-                            <a href="${mercadoLivreLink}" target="_blank" rel="noopener noreferrer sponsored" class="flex-1 bg-yellow-400 hover:bg-yellow-500 text-black font-bold text-xs px-2 py-1.5 rounded transition-colors">
-                                Mercado Livre
-                            </a>
-                            <a href="${amazonLink}" target="_blank" rel="noopener noreferrer sponsored" class="flex-1 bg-gray-200 hover:bg-white text-black font-bold text-xs px-2 py-1.5 rounded transition-colors">
-                                Amazon BR
-                            </a>
-                        </div>
-                    </div>
-                `;
-                return cardElement;
-            }
-            
             function createPokedexStackElement(cardsInStack) {
                 const representativeCard = cardsInStack[0];
-                const cardElement = createCardElement(representativeCard);
+                const cardElement = createCardElement(representativeCard, 'pokedex');
+
                 if (cardsInStack.length > 1) {
                     const badge = document.createElement('div');
                     badge.className = 'stack-badge';
                     badge.textContent = `${cardsInStack.length} Versões`;
                     cardElement.appendChild(badge);
+                    cardElement.classList.add('cursor-pointer');
+                    
+                    cardElement.addEventListener('click', () => openPokedexStackModal(cardsInStack));
                 }
-                cardElement.classList.add('cursor-pointer');
-                cardElement.addEventListener('click', () => openPokedexStackModal(cardsInStack));
+                
                 return cardElement;
             }
 
-            async function openPokedexStackModal(cardsInStack) {
-                const pokemonName = cardsInStack[0].name;
-                stackModalTitle.textContent = `Versões de ${pokemonName}`;
-                stackModalBody.innerHTML = ''; 
-
-                const ownedHeader = document.createElement('h3');
-                ownedHeader.className = "text-lg font-bold mb-3 text-green-400";
-                ownedHeader.textContent = "Versões que você tem";
-                stackModalBody.appendChild(ownedHeader);
-
-                const ownedGrid = document.createElement('div');
-                ownedGrid.className = "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4";
-                cardsInStack.sort((a,b) => new Date(a.set.releaseDate) - new Date(b.set.releaseDate))
-                    .forEach(card => ownedGrid.appendChild(createCardElement(card)));
-                stackModalBody.appendChild(ownedGrid);
-
+            function openPokedexStackModal(cardsInStack) {
+                stackModalTitle.textContent = `Versões de ${cardsInStack[0].name}`;
+                stackModalGrid.innerHTML = '';
+                
+                cardsInStack.sort((a,b) => new Date(a.set.releaseDate) - new Date(b.set.releaseDate)).forEach(card => {
+                    const cardElement = createCardElement(card, 'pokedex');
+                    stackModalGrid.appendChild(cardElement);
+                });
+                
                 pokedexStackModal.style.display = 'flex';
-
-                const missingHeaderContainer = document.createElement('div');
-                missingHeaderContainer.className = "flex justify-center items-center gap-4 mt-8 mb-3";
-                
-                const missingHeader = document.createElement('h3');
-                missingHeader.className = "text-lg font-bold text-center text-red-400";
-                missingHeader.textContent = "Versões Faltantes";
-                
-                const generateListBtn = document.createElement('button');
-                generateListBtn.innerHTML = '📋 Gerar Lista';
-                generateListBtn.className = 'bg-blue-600 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-xs transition-colors hidden';
-
-                missingHeaderContainer.appendChild(missingHeader);
-                missingHeaderContainer.appendChild(generateListBtn);
-                stackModalBody.appendChild(missingHeaderContainer);
-
-                const missingGrid = document.createElement('div');
-                missingGrid.className = "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4";
-                stackModalBody.appendChild(missingGrid);
-
-                const missingLoader = document.createElement('div');
-                missingLoader.className = 'loader mx-auto col-span-full';
-                missingGrid.appendChild(missingLoader);
-                
-                try {
-                    const ownedCardIds = new Set(cardsInStack.map(card => card.id));
-                    
-                    // **ALTERAÇÃO AQUI: A busca agora é por todas as versões do Pokémon**
-                    const apiQuery = `name:"${pokemonName}"`;
-
-                    const response = await fetch(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(apiQuery)}&orderBy=set.releaseDate,number&select=id,name,number,images,set`);
-                    if (!response.ok) throw new Error('API request failed for missing Pokémon cards.');
-
-                    const apiData = await response.json();
-                    const allRelevantCards = apiData.data;
-                    
-                    const missingCards = allRelevantCards.filter(card => !ownedCardIds.has(card.id));
-                    
-                    missingLoader.remove();
-
-                    if (missingCards.length === 0) {
-                        missingHeader.textContent = `✨ Você possui todas as versões de ${pokemonName}! ✨`;
-                        missingHeader.className = "text-lg font-bold mt-8 mb-3 text-center text-green-400";
-                    } else {
-                        missingCards.forEach(card => missingGrid.appendChild(createMissingCardElement(card)));
-
-                        generateListBtn.classList.remove('hidden');
-                        generateListBtn.addEventListener('click', (e) => {
-                            e.stopPropagation();
-                            let shoppingListString = `Lista de Compras - ${pokemonName}\n\n`;
-                            missingCards.forEach(card => {
-                                const cardNumber = card.number || 'N/A';
-                                const setTotal = card.set.printedTotal || 'N/A';
-                                const formattedCardNumber = String(cardNumber).padStart(3, '0');
-                                shoppingListString += `${card.name} (${formattedCardNumber}/${setTotal})\n`;
-                            });
-                            displayCopyableList(shoppingListString);
-                        });
-                    }
-                } catch(error) {
-                    console.error("Erro ao buscar versões faltantes do Pokémon:", error);
-                    missingLoader.remove();
-                    const errorMsg = document.createElement('p');
-                    errorMsg.className = "col-span-full text-center text-yellow-500";
-                    errorMsg.textContent = "Não foi possível carregar as versões faltantes.";
-                    missingGrid.appendChild(errorMsg);
-                }
             }
 
             function showError(message) {
@@ -581,62 +432,30 @@
                 title.textContent = "Erro";
             }
             
-            function createCardElement(card) {
+            function createCardElement(card, groupBy) {
                 const cardElement = document.createElement('div');
                 cardElement.className = "bg-gray-800 p-3 rounded-lg flex flex-col items-center text-center collection-card";
                 
-                if(listType === 'wishlist') {
-                     cardElement.innerHTML = `
-                        <img src="${card.image || card.images.small}" alt="${card.name}" class="rounded w-full mb-2 aspect-[5/7] object-cover">
-                        <p class="font-bold text-sm">${card.name}</p>
-                        <div class="text-xs text-gray-400 flex items-center justify-center gap-1.5 mt-1">
-                            <img src="${card.set.images.symbol}" class="h-4" alt="Set Symbol"> 
-                            <span>#${String(card.number).padStart(3, '0')}</span>
-                        </div>
-                    `;
-                    return cardElement;
-                }
-
-                const qualityClasses = { 'Nova': 'bg-green-600 text-white', 'Pouco Usada': 'bg-yellow-500 text-gray-900', 'Usada': 'bg-red-600 text-white' };
-                const qualityClass = qualityClasses[card.quality] || 'bg-gray-500';
-                
                 let pokedexInfo = '';
-                 if (groupBySelect.value === 'pokedex' && card.pokedexNumber) {
+                if (groupBy === 'pokedex' && card.pokedexNumber) {
                     pokedexInfo = `<p class="font-bold text-lg text-cyan-400">#${String(card.pokedexNumber).padStart(3, '0')}</p>`;
                 }
-                
+
                 let setInfoHTML = '';
                 if(card.set && card.set.name && card.number) {
                     const symbolUrl = (card.set.images && card.set.images.symbol) ? card.set.images.symbol : '';
                     const symbolImg = symbolUrl ? `<img src="${symbolUrl}" class="h-4" alt="Set Symbol">` : '';
-                    setInfoHTML = `<div class="text-xs text-gray-400 flex items-center justify-center gap-1.5 mt-1"><span>${card.set.name}</span> ${symbolImg} <span>#${String(card.number).padStart(3, '0')}</span></div>`;
+                    setInfoHTML = `<div class="text-xs text-gray-400 flex items-center justify-center gap-1.5 mt-1"><span>${card.set.name}</span> ${symbolImg} <span>#${card.number}</span></div>`;
                 }
-
-                const tagsHTML = `
-                    <div class="flex flex-wrap items-center justify-center gap-1 my-2">
-                       <div class="text-xs font-semibold px-2 py-0.5 rounded-full ${qualityClass}">${card.quality || 'N/A'}</div>
-                       <div class="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-600 text-white">${card.finish || 'N/A'}</div>
-                       <div class="text-xs font-semibold px-2 py-0.5 rounded-full bg-purple-600 text-white">${card.language || 'EN'}</div>
-                    </div>
-                `;
-
-                const quantityKey = listType === 'sale' ? 'quantityForSale' : 'quantityTotal';
-                const quantityToShow = card[quantityKey] || 0;
                 
-                let salePriceHTML = '';
-                if (listType === 'sale' && card.salePrice) {
-                    salePriceHTML = `<p class="text-lg font-bold text-green-400">R$ ${card.salePrice.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>`;
-                }
-
                 cardElement.innerHTML = `
                     ${pokedexInfo}
-                    <img src="${card.image || card.images.small}" alt="${card.name}" class="rounded w-full mb-2 aspect-[5/7] object-cover">
+                    <img src="${card.image}" alt="${card.name}" class="rounded w-full mb-2 card-image-zoom">
                     <p class="font-bold text-sm">${card.name}</p>
                     ${setInfoHTML}
-                    ${tagsHTML}
                     <div class="mt-auto pt-2 text-center">
-                        ${salePriceHTML}
-                        ${quantityToShow > 0 ? `<span class="font-bold text-lg text-gray-300">${quantityToShow}x disponível</span>` : ''}
+                        <p class="text-sm text-yellow-400 font-bold">R$ ${card.acquiredPrice?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || 'N/A'}</p>
+                        <span class="font-bold text-lg">${card.quantity}x</span>
                     </div>
                 `;
                 return cardElement;
@@ -644,9 +463,6 @@
             
             groupBySelect.addEventListener('change', renderPublicCollection);
             stackModalCloseBtn.addEventListener('click', () => pokedexStackModal.style.display = 'none');
-            
-            shoppingListCloseBtn.addEventListener('click', () => shoppingListModal.style.display = 'none');
-            shoppingListCloseBtn2.addEventListener('click', () => shoppingListModal.style.display = 'none');
         });
     </script>
 </body>
